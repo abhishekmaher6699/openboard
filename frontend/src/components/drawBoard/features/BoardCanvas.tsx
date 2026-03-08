@@ -6,10 +6,10 @@ import type { Shape } from "../../../types/board";
 
 type Props = {
   shapes: Shape[];
-  //   onMove: (id: string, x: number, y: number) => void
+  onMove: (id: string, x: number, y: number) => void;
 };
 
-export default function BoardCanvas({ shapes }: Props) {
+export default function BoardCanvas({ shapes, onMove }: Props) {
   const { app } = useApplication();
 
   const viewportRef = useRef<Viewport | null>(null);
@@ -81,7 +81,7 @@ export default function BoardCanvas({ shapes }: Props) {
       let offsetY = 0;
 
       g.on("pointerdown", (e) => {
-        e.stopPropagation(); // prevent viewport drag
+        e.stopPropagation();
 
         dragging = true;
 
@@ -89,9 +89,11 @@ export default function BoardCanvas({ shapes }: Props) {
 
         offsetX = pos.x - g.x;
         offsetY = pos.y - g.y;
+
+        viewport.plugins.pause("drag");
       });
 
-      g.on("pointermove", (e) => {
+      viewport.on("pointermove", (e) => {
         if (!dragging) return;
 
         const pos = viewport.toWorld(e.global);
@@ -100,19 +102,22 @@ export default function BoardCanvas({ shapes }: Props) {
         g.y = pos.y - offsetY;
       });
 
-      g.on("pointerup", (e) => {
+      viewport.on("pointerup", (e) => {
         if (!dragging) return;
 
         dragging = false;
 
-        const pos = viewport.toWorld(e.global);
-        console.log(`Moved shape ${shape.id} to (${pos.x - offsetX}, ${pos.y - offsetY})`);
+        viewport.plugins.resume("drag");
 
-        //   onMove(shape.id, pos.x - offsetX, pos.y - offsetY);
+        const pos = viewport.toWorld(e.global);
+
+        console.log("Moved", shape.id, pos.x - offsetX, pos.y - offsetY);
+        onMove(shape.id, pos.x - offsetX, pos.y - offsetY);
       });
 
-      g.on("pointerupoutside", () => {
+      viewport.on("pointerupoutside", () => {
         dragging = false;
+        viewport.plugins.resume("drag");
       });
 
       itemsLayer.addChild(g);

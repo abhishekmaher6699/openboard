@@ -22,6 +22,24 @@ export default function useBoardSocket({ boardId, setShapes }: Props) {
       console.log("WS connected")
     }
 
+    socket.onmessage = (event) => {
+
+      const data = JSON.parse(event.data)
+
+      if (data.type === "move_shape") {
+
+        setShapes(prev =>
+          prev.map(shape =>
+            shape.id === data.id
+              ? { ...shape, x: data.x, y: data.y }
+              : shape
+          )
+        )
+
+      }
+
+    }
+
     socket.onerror = (err) => {
       console.error("WS error", err)
     }
@@ -30,31 +48,7 @@ export default function useBoardSocket({ boardId, setShapes }: Props) {
       console.log("WS closed")
     }
 
-    socket.onmessage = (event) => {
-      try {
-
-        const data = JSON.parse(event.data)
-
-        if (data.type === "move_shape") {
-
-          setShapes(prev =>
-            prev.map(shape =>
-              shape.id === data.id
-                ? { ...shape, x: data.x, y: data.y }
-                : shape
-            )
-          )
-
-        }
-
-      } catch (err) {
-        console.error("Invalid WS message", err)
-      }
-    }
-
-    return () => {
-      socket.close()
-    }
+    return () => socket.close()
 
   }, [boardId])
 
@@ -62,11 +56,7 @@ export default function useBoardSocket({ boardId, setShapes }: Props) {
 
     const socket = socketRef.current
 
-    if (!socket) return
-
-    if (socket.readyState !== WebSocket.OPEN) {
-      return
-    }
+    if (!socket || socket.readyState !== WebSocket.OPEN) return
 
     socket.send(JSON.stringify({
       type: "move_shape",

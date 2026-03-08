@@ -1,8 +1,9 @@
 import { Application } from "@pixi/react";
 import { useState } from "react";
 import BoardCanvas from "./BoardCanvas";
+import useBoardSocket from "../../../lib/useBoardSocket";
 
-export default function PixiBoard() {
+export default function PixiBoard({ boardId }: { boardId: string }) {
 
   const [shapes, setShapes] = useState([
     { id: "1", x: -200, y: -200, width: 400, height: 400, color: 0xff0000 },
@@ -10,9 +11,25 @@ export default function PixiBoard() {
 
   ]);
 
+  const {sendMove} = useBoardSocket({ boardId, setShapes })
+
+  const moveShape = (id: string, x: number, y: number) => {
+
+    // optimistic update
+    setShapes(prev =>
+      prev.map(shape =>
+        shape.id === id
+          ? { ...shape, x, y }
+          : shape
+      )
+    )
+
+    sendMove(id, x, y)
+  }
+  
   return (
     <Application resizeTo={window} background={0xffffff}>
-      <BoardCanvas shapes={shapes} />
+      <BoardCanvas shapes={shapes} onMove={moveShape} />
     </Application>
   );
 }
