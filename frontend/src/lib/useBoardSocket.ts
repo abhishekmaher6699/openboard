@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react"
-import type { Shape } from "../types/board"
+import type { BoardObject } from "../types/board"
 
 type Props = {
   boardId: string
-  setShapes: React.Dispatch<React.SetStateAction<Shape[]>>
+  setObjects: React.Dispatch<React.SetStateAction<BoardObject[]>>
 }
 
-export default function useBoardSocket({ boardId, setShapes }: Props) {
+export default function useBoardSocket({ boardId, setObjects }: Props) {
 
   const socketRef = useRef<WebSocket | null>(null)
 
@@ -28,11 +28,11 @@ export default function useBoardSocket({ boardId, setShapes }: Props) {
 
       if (data.type === "move_shape") {
 
-        setShapes(prev =>
-          prev.map(shape =>
-            shape.id === data.id
-              ? { ...shape, x: data.x, y: data.y }
-              : shape
+        setObjects(prev =>
+          prev.map(obj =>
+            obj.id === data.id
+              ? { ...obj, x: data.x, y: data.y }
+              : obj
           )
         )
 

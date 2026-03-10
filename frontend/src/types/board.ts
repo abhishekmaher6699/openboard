@@ -55,3 +55,19 @@ export type Shape = {
   height: number
   color: number
 }
+
+export type BoardObject = {
+  id: string
+  type: string
+
+  x: number
+  y: number
+
+  width?: number
+  height?: number
+
+  rotation?: number
+  z_index?: number
+
+  data: Record<string, any>
+}

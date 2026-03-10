@@ -2,19 +2,22 @@ import { useApplication } from "@pixi/react";
 import { Viewport } from "pixi-viewport";
 import { Container, Graphics } from "pixi.js";
 import { useEffect, useRef } from "react";
-import type { Shape } from "../../../types/board";
+import type { BoardObject } from "../../../types/board";
 
 type Props = {
-  shapes: Shape[];
+  objects: BoardObject[];
   onMove: (id: string, x: number, y: number) => void;
+  onCreate: (x: number, y: number) => void;
 };
 
-export default function BoardCanvas({ shapes, onMove }: Props) {
+export default function BoardCanvas({ objects, onMove, onCreate }: Props) {
   const { app } = useApplication();
 
   const viewportRef = useRef<Viewport | null>(null);
   const itemsLayerRef = useRef<Container | null>(null);
 
+
+// Setup viewport
   useEffect(() => {
     if (!app) return;
 
@@ -56,6 +59,36 @@ export default function BoardCanvas({ shapes, onMove }: Props) {
     };
   }, [app]);
 
+  
+  //  Double click create object
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    let lastClickTime = 0;
+
+    const handlePointerDown = (e: any) => {
+      const now = Date.now();
+
+      if (now - lastClickTime < 300) {
+        const pos = viewport.toWorld(e.global);
+        console.log("Double click detected", pos);
+        onCreate(pos.x, pos.y);
+      }
+
+      lastClickTime = now;
+    };
+
+    viewport.on("pointerdown", handlePointerDown);
+
+    return () => {
+      viewport.off("pointerdown", handlePointerDown);
+    };
+  }, [onCreate]);
+
+
+
+  // Render objects
   useEffect(() => {
     const viewport = viewportRef.current;
     const itemsLayer = itemsLayerRef.current;
@@ -64,14 +97,21 @@ export default function BoardCanvas({ shapes, onMove }: Props) {
 
     itemsLayer.removeChildren();
 
-    shapes.forEach((shape) => {
+    objects.forEach((obj) => {
       const g = new Graphics();
 
-      g.rect(0, 0, shape.width, shape.height);
-      g.fill(shape.color);
+      const width = obj.width ?? 200;
+      const height = obj.height ?? 120;
 
-      g.x = shape.x;
-      g.y = shape.y;
+      const color = obj.data?.fill
+        ? parseInt(obj.data.fill.replace("#", "0x"))
+        : 0xff0000;
+
+      g.rect(0, 0, width, height);
+      g.fill(color);
+
+      g.x = obj.x;
+      g.y = obj.y;
 
       g.eventMode = "static";
       g.cursor = "pointer";
@@ -111,8 +151,7 @@ export default function BoardCanvas({ shapes, onMove }: Props) {
 
         const pos = viewport.toWorld(e.global);
 
-        console.log("Moved", shape.id, pos.x - offsetX, pos.y - offsetY);
-        onMove(shape.id, pos.x - offsetX, pos.y - offsetY);
+        onMove(obj.id, pos.x - offsetX, pos.y - offsetY);
       });
 
       viewport.on("pointerupoutside", () => {
@@ -122,7 +161,7 @@ export default function BoardCanvas({ shapes, onMove }: Props) {
 
       itemsLayer.addChild(g);
     });
-  }, [shapes]);
+  }, [objects, onMove]);
 
   return null;
 }

@@ -1,35 +1,48 @@
 import { Application } from "@pixi/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BoardCanvas from "./BoardCanvas";
 import useBoardSocket from "../../../lib/useBoardSocket";
+import type { BoardObject } from "../../../types/board";
+import { getBoardObjects } from "../../../api/board_objects";
+import { createObject } from "../../../api/board_objects";
 
 export default function PixiBoard({ boardId }: { boardId: string }) {
+  const [objects, setObjects] = useState<BoardObject[]>([]);
 
-  const [shapes, setShapes] = useState([
-    { id: "1", x: -200, y: -200, width: 400, height: 400, color: 0xff0000 },
-    { id: "2", x: -400, y: -300, width: 100, height: 50, color: 0xff0000 },
+  const createNewObject = async (x: number, y: number) => {
+    const newObject = {
+      type: "rectangle",
+      x,
+      y,
+      width: 200,
+      height: 120,
+      data: {
+        fill: "0xff0000",
+      },
+    };
+    const created = await createObject(boardId, newObject);
+    setObjects((prev) => [...prev, created]);
+  };
 
-  ]);
 
-  const {sendMove} = useBoardSocket({ boardId, setShapes })
+  useEffect(() => {
+    getBoardObjects(boardId).then(setObjects);
+  }, [boardId]);
 
-  const moveShape = (id: string, x: number, y: number) => {
+  const { sendMove } = useBoardSocket({ boardId, setObjects });
 
-    // optimistic update
-    setShapes(prev =>
-      prev.map(shape =>
-        shape.id === id
-          ? { ...shape, x, y }
-          : shape
-      )
-    )
+  const moveObject = (id: string, x: number, y: number) => {
 
-    sendMove(id, x, y)
-  }
-  
+    setObjects((prev) =>
+      prev.map((obj) => (obj.id === id ? { ...obj, x, y } : obj)),
+    );
+
+    sendMove(id, x, y);
+  };
+
   return (
     <Application resizeTo={window} background={0xffffff}>
-      <BoardCanvas shapes={shapes} onMove={moveShape} />
+      <BoardCanvas objects={objects} onCreate={createNewObject} onMove={moveObject} />
     </Application>
   );
 }
