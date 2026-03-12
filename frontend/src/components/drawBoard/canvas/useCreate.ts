@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 export function useCreate({
   viewportRef,
@@ -6,33 +6,31 @@ export function useCreate({
   onCreate
 }: any) {
 
-  useEffect(() => {
+  const toolRef = useRef(tool)
+  toolRef.current = tool
 
+  const onCreateRef = useRef(onCreate)
+  onCreateRef.current = onCreate
+
+  useEffect(() => {
     const viewport = viewportRef.current
     if (!viewport) return
 
     let lastClick = 0
 
-    const down = (e:any) => {
-
+    const down = (e: any) => {
       const now = Date.now()
 
       if (now - lastClick < 300) {
-
         const pos = viewport.toWorld(e.global)
-
-        onCreate(tool, pos.x, pos.y)
-
+        onCreateRef.current(toolRef.current, pos.x, pos.y)
       }
 
       lastClick = now
-
     }
 
     viewport.on("pointerdown", down)
-
     return () => viewport.off("pointerdown", down)
 
-  }, [tool, onCreate])
-
+  }, []) // ← empty deps, registered once, refs stay current
 }

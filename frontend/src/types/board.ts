@@ -39,6 +39,7 @@ export interface BoardMenuProps {
 
 import { Viewport } from "pixi-viewport";
 import { Container } from "pixi.js";
+import { Graphics } from "pixi.js"
 
 export type BoardCanvasType = {
   viewport: Viewport;
@@ -53,7 +54,7 @@ export type BoardCanvasProps = {
     onMove: (id: string, x: number, y: number) => void
     onCreate: (type: any, x: number, y: number) => void
     onDelete: (id: string) => void
-    onResize: (id: string, width: number, height: number) => void
+    onResize: (id: string, width: number, height: number, x: number, y: number) => void
 };
 
 export type BoardObject = {
@@ -71,3 +72,41 @@ export type BoardObject = {
 
   data: Record<string, any>
 }
+
+
+export type useResizeProps = {
+  viewportRef: React.RefObject<any>
+  selectedRef: React.RefObject<string | null>
+  selectionRef: React.RefObject<any>
+  graphicsMapRef: React.RefObject<Map<string, any>>
+  onResize: (id: string, width: number, height: number, x: number, y: number) => void
+  drawSelectionRef: React.RefObject<(obj: any) => void>
+}
+
+export type ResizeHandle = "nw" | "ne" | "se" | "sw"
+
+export type ActiveResize = {
+  id: string
+  handle: ResizeHandle
+  startX: number
+  startY: number
+  startObjX: number
+  startObjY: number
+  startWidth: number
+  startHeight: number
+  graphics: any
+  type: string
+}
+
+
+export type UseShapeRendererProps = {
+  objects: BoardObject[]
+  viewportRef: React.RefObject<any>
+  itemsLayerRef: React.RefObject<any>
+  selectedRef: React.RefObject<string | null>
+  selectionRef: React.RefObject<any>
+  activeDragRef: React.RefObject<any>
+  graphicsMapRef: React.RefObject<Map<string, Graphics>>
+  drawSelection: (obj: BoardObject) => void
+}
+

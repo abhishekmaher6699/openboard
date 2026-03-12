@@ -35,7 +35,7 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
         setObjects((prev) =>
           prev.map((obj) =>
             obj.id === data.id
-              ? { ...obj, width: data.width, height: data.height }
+              ? { ...obj, width: data.width, height: data.height, x:data.x, y:data.y }
               : obj,
           ),
         );
@@ -77,7 +77,7 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     );
   };
 
-  const sendResize = (id: string, width: number, height: number) => {
+  const sendResize = (id: string, width: number, height: number, x: number, y: number) => {
     const socket = socketRef.current;
 
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
@@ -88,6 +88,8 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
         id,
         width,
         height,
+        x,
+        y
       }),
     );
   };

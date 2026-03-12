@@ -21,7 +21,10 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     getBoardObjects(boardId).then(setObjects);
   }, [boardId]);
 
-  const { sendMove, sendDelete, sendCreate, sendResize } = useBoardSocket({boardId, setObjects});
+  const { sendMove, sendDelete, sendCreate, sendResize } = useBoardSocket({
+    boardId,
+    setObjects,
+  });
 
   const createNewObject = async (type: string, x: number, y: number) => {
     const newObject = {
@@ -39,6 +42,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
       const created = await createObject(boardId, newObject);
       setObjects((prev) => [...prev, created]);
       sendCreate(created);
+      console.log(created)
     } catch (err) {
       console.error("Create failed", err);
     }
@@ -68,24 +72,26 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     }
   };
 
-  const resizeObject = async (id: string, width: number, height: number) => {
-
-    setObjects(prev =>
-      prev.map(obj =>
-        obj.id === id
-          ? { ...obj, width, height }
-          : obj
-      )
-    )
+  const resizeObject = async (
+    id: string,
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+  ) => {
+    setObjects((prev) =>
+      prev.map((obj) =>
+        obj.id === id ? { ...obj, width, height, x, y } : obj,
+      ),
+    );
 
     try {
-      sendResize(id, width, height)
-      await updateObject(boardId, id, { width, height })
+      sendResize(id, width, height, x, y);
+      await updateObject(boardId, id, { width, height, x, y });
     } catch (err) {
-      console.error("Resize failed", err)
+      console.error("Resize failed", err);
     }
-
-  }
+  };
 
   return (
     <>
