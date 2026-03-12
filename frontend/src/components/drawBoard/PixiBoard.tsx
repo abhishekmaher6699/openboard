@@ -1,0 +1,112 @@
+import { Application } from "@pixi/react";
+import { useState, useEffect } from "react";
+import BoardCanvas from "./BoardCanvas";
+import useBoardSocket from "../../lib/useBoardSocket";
+import type { BoardObject } from "../../types/board";
+import { getBoardObjects } from "../../api/board_objects";
+import {
+  createObject,
+  deleteObject as deleteObjectApi,
+  updateObject,
+} from "../../api/board_objects";
+import BoardControls from "./features/BoardControls";
+
+export default function PixiBoard({ boardId }: { boardId: string }) {
+  const [objects, setObjects] = useState<BoardObject[]>([]);
+  const [tool, setTool] = useState<"rectangle" | "circle" | "sticky">(
+    "rectangle",
+  );
+
+  useEffect(() => {
+    getBoardObjects(boardId).then(setObjects);
+  }, [boardId]);
+
+  const { sendMove, sendDelete, sendCreate, sendResize } = useBoardSocket({boardId, setObjects});
+
+  const createNewObject = async (type: string, x: number, y: number) => {
+    const newObject = {
+      type,
+      x,
+      y,
+      width: 200,
+      height: 120,
+      data: {
+        fill: "0xff0000",
+      },
+    };
+
+    try {
+      const created = await createObject(boardId, newObject);
+      setObjects((prev) => [...prev, created]);
+      sendCreate(created);
+    } catch (err) {
+      console.error("Create failed", err);
+    }
+  };
+
+  const moveObject = async (id: string, x: number, y: number) => {
+    setObjects((prev) =>
+      prev.map((obj) => (obj.id === id ? { ...obj, x, y } : obj)),
+    );
+
+    try {
+      sendMove(id, x, y);
+      await updateObject(boardId, id, { x, y });
+    } catch (err) {
+      console.error("Move failed", err);
+    }
+  };
+
+  const deleteObject = async (id: string) => {
+    setObjects((prev) => prev.filter((obj) => obj.id !== id));
+
+    try {
+      await deleteObjectApi(boardId, id);
+      sendDelete(id);
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
+  };
+
+  const resizeObject = async (id: string, width: number, height: number) => {
+
+    setObjects(prev =>
+      prev.map(obj =>
+        obj.id === id
+          ? { ...obj, width, height }
+          : obj
+      )
+    )
+
+    try {
+      sendResize(id, width, height)
+      await updateObject(boardId, id, { width, height })
+    } catch (err) {
+      console.error("Resize failed", err)
+    }
+
+  }
+
+  return (
+    <>
+      <BoardControls tool={tool} setTool={setTool} />
+
+      <Application
+        resizeTo={window}
+        background={0xffffff}
+        antialias
+        resolution={window.devicePixelRatio}
+        autoDensity
+      >
+        <BoardCanvas
+          objects={objects}
+          tool={tool}
+          onCreate={createNewObject}
+          onMove={moveObject}
+          onDelete={deleteObject}
+          onResize={resizeObject}
+        />
+      </Application>
+    </>
+  );
+}

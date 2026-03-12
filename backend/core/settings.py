@@ -78,12 +78,13 @@ TEMPLATES = [
 
 ASGI_APPLICATION = "core.asgi.application"
 
+ALLOWED_HOSTS = ["*"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://192.168.1.74:5173"
+]
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-# ]
-
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

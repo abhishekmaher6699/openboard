@@ -47,14 +47,14 @@ export type BoardCanvasType = {
   uiLayer: Container;
 };
 
-export type Shape = {
-  id: string
-  x: number
-  y: number
-  width: number
-  height: number
-  color: number
-}
+export type BoardCanvasProps = {
+   objects: BoardObject[]
+    tool: "rectangle" | "circle" | "sticky"
+    onMove: (id: string, x: number, y: number) => void
+    onCreate: (type: any, x: number, y: number) => void
+    onDelete: (id: string) => void
+    onResize: (id: string, width: number, height: number) => void
+};
 
 export type BoardObject = {
   id: string

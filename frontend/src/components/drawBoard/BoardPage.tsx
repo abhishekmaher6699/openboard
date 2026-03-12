@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import PixiBoard from "./features/PixiBoard";
+import PixiBoard from "./PixiBoard";
 
 export default function BoardPage() {
   const { boardId } = useParams();
