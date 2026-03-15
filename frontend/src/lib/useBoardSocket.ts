@@ -10,7 +10,6 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // const socket = new WebSocket(`ws://192.168.1.74:8000/ws/board/${boardId}/`);
     const socket = new WebSocket(`ws://localhost:8000/ws/board/${boardId}/`);
 
     socketRef.current = socket;
@@ -43,13 +42,7 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
         setObjects((prev) =>
           prev.map((obj) =>
             obj.id === data.id
-              ? {
-                  ...obj,
-                  width: data.width,
-                  height: data.height,
-                  x: data.x,
-                  y: data.y,
-                }
+              ? { ...obj, width: data.width, height: data.height, x: data.x, y: data.y }
               : obj,
           ),
         );
@@ -66,6 +59,16 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
       if (data.type === "create_shape") {
         setObjects((prev) => [...prev, data.object]);
       }
+
+      if (data.type === "update_color") {
+        setObjects((prev) =>
+          prev.map((obj) =>
+            data.ids.includes(obj.id)
+              ? { ...obj, data: { ...obj.data, fill: data.fill } }
+              : obj,
+          ),
+        );
+      }
     };
 
     socket.onerror = (err) => {
@@ -81,91 +84,45 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
 
   const sendMove = (id: string, x: number, y: number) => {
     const socket = socketRef.current;
-
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-
-    socket.send(
-      JSON.stringify({
-        type: "move_shape",
-        id,
-        x,
-        y,
-      }),
-    );
+    socket.send(JSON.stringify({ type: "move_shape", id, x, y }));
   };
 
   const sendManyMoves = (moves: { id: string; x: number; y: number }[]) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-
-    socket.send(
-      JSON.stringify({
-        type: "move_many",
-        moves,
-      }),
-    );
+    socket.send(JSON.stringify({ type: "move_many", moves }));
   };
 
-  const sendResize = (
-    id: string,
-    width: number,
-    height: number,
-    x: number,
-    y: number,
-  ) => {
+  const sendResize = (id: string, width: number, height: number, x: number, y: number) => {
     const socket = socketRef.current;
-
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-
-    socket.send(
-      JSON.stringify({
-        type: "resize_shape",
-        id,
-        width,
-        height,
-        x,
-        y,
-      }),
-    );
+    socket.send(JSON.stringify({ type: "resize_shape", id, width, height, x, y }));
   };
 
   const sendDelete = (id: string) => {
     const socket = socketRef.current;
-
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-
-    socket.send(
-      JSON.stringify({
-        type: "delete_shape",
-        id,
-      }),
-    );
+    socket.send(JSON.stringify({ type: "delete_shape", id }));
   };
 
   const sendManyDelete = (ids: string[]) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-
-    socket.send(
-      JSON.stringify({
-        type: "delete_many",
-        ids,
-      }),
-    );
+    socket.send(JSON.stringify({ type: "delete_many", ids }));
   };
 
   const sendCreate = (object: BoardObject) => {
     const socket = socketRef.current;
-
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-
-    socket.send(
-      JSON.stringify({
-        type: "create_shape",
-        object,
-      }),
-    );
+    socket.send(JSON.stringify({ type: "create_shape", object }));
   };
 
-  return { sendMove, sendManyMoves, sendDelete, sendManyDelete, sendCreate, sendResize };
+  const sendColorUpdate = (ids: string[], fill: string) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({ type: "update_color", ids, fill }));
+  };
+
+  return { sendMove, sendManyMoves, sendDelete, sendManyDelete, sendCreate, sendResize, sendColorUpdate };
 }

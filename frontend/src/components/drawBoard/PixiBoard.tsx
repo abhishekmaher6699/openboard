@@ -13,9 +13,9 @@ import BoardControls from "./features/BoardControls";
 
 export default function PixiBoard({ boardId }: { boardId: string }) {
   const [objects, setObjects] = useState<BoardObject[]>([]);
-  const [tool, setTool] = useState<Tool>("rectangle")
+  const [tool, setTool] = useState<Tool>("select");
   const [color, setColor] = useState("#ff0000");
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     getBoardObjects(boardId).then(setObjects);
@@ -28,21 +28,12 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     sendManyDelete,
     sendCreate,
     sendResize,
-  } = useBoardSocket({
-    boardId,
-    setObjects,
-  });
+    sendColorUpdate,
+  } = useBoardSocket({ boardId, setObjects });
 
   const createNewObject = async (type: string, x: number, y: number) => {
     const fill = color.replace("#", "0x");
-    const newObject = {
-      type,
-      x,
-      y,
-      width: 200,
-      height: 120,
-      data: { fill },
-    };
+    const newObject = { type, x, y, width: 200, height: 120, data: { fill } };
     try {
       const created = await createObject(boardId, newObject);
       setObjects((prev) => [...prev, created]);
@@ -64,7 +55,9 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     }
   };
 
-  const moveManyObjects = async (moves: { id: string; x: number; y: number }[]) => {
+  const moveManyObjects = async (
+    moves: { id: string; x: number; y: number }[],
+  ) => {
     setObjects((prev) =>
       prev.map((obj) => {
         const move = moves.find((m) => m.id === obj.id);
@@ -101,9 +94,17 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     }
   };
 
-  const resizeObject = async (id: string, width: number, height: number, x: number, y: number) => {
+  const resizeObject = async (
+    id: string,
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+  ) => {
     setObjects((prev) =>
-      prev.map((obj) => obj.id === id ? { ...obj, width, height, x, y } : obj),
+      prev.map((obj) =>
+        obj.id === id ? { ...obj, width, height, x, y } : obj,
+      ),
     );
     try {
       sendResize(id, width, height, x, y);
@@ -115,15 +116,13 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
 
   const updateColor = async (ids: string[], newColor: string) => {
     const fill = newColor.replace("#", "0x");
-
-    // update React state immediately so useShapeRenderer redraws with new color
     setObjects((prev) =>
       prev.map((obj) =>
         ids.includes(obj.id) ? { ...obj, data: { ...obj.data, fill } } : obj,
       ),
     );
-
     try {
+      sendColorUpdate(ids, fill);
       await Promise.all(
         ids.map((id) => updateObject(boardId, id, { data: { fill } })),
       );
@@ -134,9 +133,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
 
   const handleColorChange = (newColor: string) => {
     setColor(newColor);
-    if (selectedIds.length > 0) {
-      updateColor(selectedIds, newColor);
-    }
+    if (selectedIds.length > 0) updateColor(selectedIds, newColor);
   };
 
   return (
@@ -147,7 +144,6 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         color={color}
         setColor={handleColorChange}
       />
-
       <Application
         resizeTo={window}
         background={0xffffff}

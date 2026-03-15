@@ -34,28 +34,28 @@ export default function BoardControls({ tool, setTool, color, setColor }: Props)
       {/* Shape Tools */}
       <button
         onClick={() => setTool("rectangle")}
-        className={`px-3 py-2 rounded ${tool === "rectangle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+        className={`px-3 py-2  text-black rounded ${tool === "rectangle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
       >
         ▭
       </button>
 
       <button
         onClick={() => setTool("circle")}
-        className={`px-3 py-2 rounded ${tool === "circle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+        className={`px-3 text-black py-2 rounded ${tool === "circle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
       >
         ◯
       </button>
 
       <button
         onClick={() => setTool("triangle")}
-        className={`px-3 py-2 rounded ${tool === "triangle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+        className={`px-3 py-2  text-black rounded ${tool === "triangle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
       >
         ▲
       </button>
 
       <button
         onClick={() => setTool("diamond")}
-        className={`px-3 py-2 rounded ${tool === "diamond" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+        className={`px-3 py-2   text-black rounded ${tool === "diamond" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
       >
         ◆
       </button>
