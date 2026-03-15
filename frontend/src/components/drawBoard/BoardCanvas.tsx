@@ -19,12 +19,14 @@ import type { BoardCanvasProps, BoardObject, DrawSelectionFn } from "../../types
 export default function BoardCanvas({
   objects,
   tool,
+  setTool,
   onMove,
   onCreate,
   onDelete,
   onManyDelete,
   onResize,
   onManyMove,
+  onSelectionChange,
 }: BoardCanvasProps) {
 
   const { app } = useApplication()
@@ -51,6 +53,7 @@ export default function BoardCanvas({
     objectsRef,
     objectMapRef,
     attachHandles,
+    onSelectionChange,
   })
 
   drawSelectionRef.current = drawSelection
@@ -86,7 +89,8 @@ export default function BoardCanvas({
   useCreate({
     viewportRef,
     tool,
-    onCreate
+    onCreate,
+    onToolChange: setTool
   })
 
   useDelete({

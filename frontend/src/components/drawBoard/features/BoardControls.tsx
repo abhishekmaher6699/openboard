@@ -1,6 +1,5 @@
 import React from "react"
-
-type Tool = "rectangle" | "circle" | "sticky" | "triangle" | "diamond"
+import type { Tool } from "../../../types/board"
 
 type Props = {
   tool: Tool
@@ -15,16 +14,24 @@ const presetColors = [
   "#10b981",
   "#3b82f6",
   "#8b5cf6",
-  "#000000"
+  "#000000",
 ]
 
 export default function BoardControls({ tool, setTool, color, setColor }: Props) {
-
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white shadow-xl rounded-xl px-4 py-2 border">
 
-      {/* Shape Tools */}
+      {/* Select */}
+      <button
+        onClick={() => setTool("select")}
+        className={`px-3 py-2 rounded ${tool === "select" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+      >
+        ↖
+      </button>
 
+      <div className="w-px h-6 bg-gray-200" />
+
+      {/* Shape Tools */}
       <button
         onClick={() => setTool("rectangle")}
         className={`px-3 py-2 rounded ${tool === "rectangle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
@@ -60,10 +67,9 @@ export default function BoardControls({ tool, setTool, color, setColor }: Props)
         🗒
       </button>
 
-      <div className="w-px h-6 bg-gray-200 mx-2" />
+      <div className="w-px h-6 bg-gray-200" />
 
       {/* Color Presets */}
-
       {presetColors.map((c) => (
         <button
           key={c}
@@ -74,7 +80,6 @@ export default function BoardControls({ tool, setTool, color, setColor }: Props)
       ))}
 
       {/* Color Picker */}
-
       <input
         type="color"
         value={color}

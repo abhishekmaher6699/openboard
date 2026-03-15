@@ -11,12 +11,11 @@ import {
 } from "../../api/board_objects";
 import BoardControls from "./features/BoardControls";
 
-
-
 export default function PixiBoard({ boardId }: { boardId: string }) {
   const [objects, setObjects] = useState<BoardObject[]>([]);
   const [tool, setTool] = useState<Tool>("rectangle")
   const [color, setColor] = useState("#ff0000");
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   useEffect(() => {
     getBoardObjects(boardId).then(setObjects);
@@ -35,25 +34,19 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   });
 
   const createNewObject = async (type: string, x: number, y: number) => {
-    
     const fill = color.replace("#", "0x");
-
     const newObject = {
       type,
       x,
       y,
       width: 200,
       height: 120,
-      data: {
-        fill: fill,
-      },
+      data: { fill },
     };
-
     try {
       const created = await createObject(boardId, newObject);
       setObjects((prev) => [...prev, created]);
       sendCreate(created);
-      console.log(created);
     } catch (err) {
       console.error("Create failed", err);
     }
@@ -63,7 +56,6 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     setObjects((prev) =>
       prev.map((obj) => (obj.id === id ? { ...obj, x, y } : obj)),
     );
-
     try {
       sendMove(id, x, y);
       await updateObject(boardId, id, { x, y });
@@ -72,16 +64,13 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     }
   };
 
-  const moveManyObjects = async (
-    moves: { id: string; x: number; y: number }[],
-  ) => {
+  const moveManyObjects = async (moves: { id: string; x: number; y: number }[]) => {
     setObjects((prev) =>
       prev.map((obj) => {
         const move = moves.find((m) => m.id === obj.id);
         return move ? { ...obj, x: move.x, y: move.y } : obj;
       }),
     );
-
     try {
       sendManyMoves(moves);
       await Promise.all(
@@ -94,7 +83,6 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
 
   const deleteObject = async (id: string) => {
     setObjects((prev) => prev.filter((obj) => obj.id !== id));
-
     try {
       await deleteObjectApi(boardId, id);
       sendDelete(id);
@@ -105,7 +93,6 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
 
   const deleteManyObjects = async (ids: string[]) => {
     setObjects((prev) => prev.filter((obj) => !ids.includes(obj.id)));
-
     try {
       sendManyDelete(ids);
       await Promise.all(ids.map((id) => deleteObjectApi(boardId, id)));
@@ -114,19 +101,10 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     }
   };
 
-  const resizeObject = async (
-    id: string,
-    width: number,
-    height: number,
-    x: number,
-    y: number,
-  ) => {
+  const resizeObject = async (id: string, width: number, height: number, x: number, y: number) => {
     setObjects((prev) =>
-      prev.map((obj) =>
-        obj.id === id ? { ...obj, width, height, x, y } : obj,
-      ),
+      prev.map((obj) => obj.id === id ? { ...obj, width, height, x, y } : obj),
     );
-
     try {
       sendResize(id, width, height, x, y);
       await updateObject(boardId, id, { width, height, x, y });
@@ -135,9 +113,10 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     }
   };
 
-  const updateColor = async (ids: string[], color: string) => {
-    const fill = color.replace("#", "0x");
+  const updateColor = async (ids: string[], newColor: string) => {
+    const fill = newColor.replace("#", "0x");
 
+    // update React state immediately so useShapeRenderer redraws with new color
     setObjects((prev) =>
       prev.map((obj) =>
         ids.includes(obj.id) ? { ...obj, data: { ...obj.data, fill } } : obj,
@@ -146,14 +125,17 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
 
     try {
       await Promise.all(
-        ids.map((id) =>
-          updateObject(boardId, id, {
-            data: { fill },
-          }),
-        ),
+        ids.map((id) => updateObject(boardId, id, { data: { fill } })),
       );
     } catch (err) {
       console.error("Color update failed", err);
+    }
+  };
+
+  const handleColorChange = (newColor: string) => {
+    setColor(newColor);
+    if (selectedIds.length > 0) {
+      updateColor(selectedIds, newColor);
     }
   };
 
@@ -163,7 +145,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         tool={tool}
         setTool={setTool}
         color={color}
-        setColor={setColor}
+        setColor={handleColorChange}
       />
 
       <Application
@@ -176,12 +158,14 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         <BoardCanvas
           objects={objects}
           tool={tool}
+          setTool={setTool}
           onCreate={createNewObject}
           onMove={moveObject}
           onDelete={deleteObject}
           onManyDelete={deleteManyObjects}
           onResize={resizeObject}
           onManyMove={moveManyObjects}
+          onSelectionChange={setSelectedIds}
         />
       </Application>
     </>

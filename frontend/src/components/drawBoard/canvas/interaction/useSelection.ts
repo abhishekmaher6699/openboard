@@ -12,6 +12,7 @@ export function useSelection({
   interactionRef,
   objectMapRef,
   attachHandles,
+  onSelectionChange,
 }: UseSelectionProps) {
 
   const drawSelection: DrawSelectionFn = (
@@ -22,6 +23,9 @@ export function useSelection({
     if (!overlay) return;
 
     const interaction = interactionRef.current;
+
+    // notify PixiBoard whenever selection changes
+    onSelectionChange?.([...ids])
 
     if (ids.size === 0) {
       if (interaction.selectionGraphics) {
@@ -98,14 +102,10 @@ export function useSelection({
     container.removeChildren();
     container.addChild(outline);
 
-    // Pass the full bounding box to attachHandles regardless of selection size.
-    // useResize reads interaction.selected to snapshot all objects internally.
     if (attachHandles) {
       attachHandles(container, {
-        // id/type from first rect — useResize uses interaction.selected for the full set
         id: rects[0].id,
         type: rects[0].type,
-        // position is relative to container (which sits at minX/minY)
         x: 0,
         y: 0,
         width: maxX - minX,
@@ -182,6 +182,7 @@ export function useSelection({
       }
 
       interaction.selected = new Set();
+      onSelectionChange?.([]);
 
       if (interaction.selectionGraphics) {
         interaction.selectionGraphics.visible = false;
@@ -196,7 +197,6 @@ export function useSelection({
     viewport.on("pointerup", up);
     viewport.on("pointeroutside", up);
 
-    // Refs are intentionally omitted from deps — they're stable by design
     return () => {
       viewport.off("pointerdown", down);
       viewport.off("pointerup", up);

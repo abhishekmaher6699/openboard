@@ -34,6 +34,7 @@ export type Tool =
   | "sticky"
   | "triangle"
   | "diamond"
+  | "select"
 
 
 export interface ControlProps {
@@ -58,13 +59,14 @@ export type BoardCanvasType = {
 export type BoardCanvasProps = {
   objects: BoardObject[]
   tool: Tool
+  setTool: React.Dispatch<React.SetStateAction<Tool>>
   onMove: (id: string, x: number, y: number) => void
   onCreate: (type: any, x: number, y: number) => void
   onDelete: (id: string) => void
   onManyDelete: (ids: string[]) => void
   onResize: (id: string, width: number, height: number, x: number, y: number) => void
   onManyMove: (moves: { id: string; x: number; y: number }[]) => void
-
+  onSelectionChange?: (ids: string[]) => void
 }
 
 export type BoardObject = {
@@ -134,6 +136,7 @@ export type UseSelectionProps = {
   objectsRef: React.RefObject<BoardObject[]>
   objectMapRef: React.RefObject<Map<string, BoardObject>>
   interactionRef: React.RefObject<BoardInteraction>
+   onSelectionChange?: (ids: string[]) => void
 }
 
 export type UseMarqueeProps = {
@@ -161,6 +164,7 @@ export type UseCreateProps = {
   viewportRef: React.RefObject<any>
   tool: string
   onCreate: (type: string, x: number, y: number) => void
+  onToolChange?: (tool: Tool) => void
 }
 
 export type UseDeleteProps = {
