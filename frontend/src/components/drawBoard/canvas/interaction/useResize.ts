@@ -1,11 +1,10 @@
 import { Graphics } from "pixi.js"
 import { useEffect, useRef } from "react"
-import { drawShape } from "./shapeUtils"
-import type { ResizeHandle, ActiveResize, useResizeProps } from "../../../types/board"
+import type { ActiveResize, ResizeHandle, SelectionOverrides, UseResizeProps } from "../../../../types/board"
+import { drawShape } from "../interaction/shapeUtils"
 
 const HANDLE_SIZE = 10
 const MIN_SIZE = 40
-
 
 function getCursor(handle: ResizeHandle) {
   const map: Record<ResizeHandle, string> = {
@@ -19,10 +18,12 @@ function getCursor(handle: ResizeHandle) {
 
 export function useResize({
   viewportRef,
-  graphicsMapRef,
+  interactionRef,
   onResize,
   drawSelectionRef,
-}: useResizeProps) {
+}: UseResizeProps) {
+
+  const interaction = interactionRef.current
   const activeResizeRef = useRef<ActiveResize | null>(null)
 
   function attachHandles(container: any, obj: any) {
@@ -30,6 +31,8 @@ export function useResize({
     const handles: ResizeHandle[] = ["nw", "ne", "se", "sw"]
 
     handles.forEach((handle) => {
+
+      console.log(obj.type)
       const h = new Graphics()
       h.rect(-HANDLE_SIZE / 2, -HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE)
       h.fill(0xffffff)
@@ -37,6 +40,7 @@ export function useResize({
       h.eventMode = "static"
       h.cursor = getCursor(handle)
 
+      // obj.x and obj.y are 0 here because container is already at shape position
       h.x = handle.includes("e") ? obj.width + padding : -padding
       h.y = handle.includes("s") ? obj.height + padding : -padding
 
@@ -47,7 +51,9 @@ export function useResize({
         if (!viewport) return
 
         const worldPos = viewport.toWorld(e.global)
-        const graphics = graphicsMapRef.current?.get(obj.id)
+        const graphics = interaction.graphicsMap?.get(obj.id)
+
+        interaction.selected = new Set([obj.id])
 
         activeResizeRef.current = {
           id: obj.id,
@@ -73,7 +79,10 @@ export function useResize({
     const viewport = viewportRef.current
     if (!viewport) return
 
-    const computeNewDimensions = (r: ActiveResize, worldPos: { x: number; y: number }) => {
+    const computeNewDimensions = (
+      r: ActiveResize,
+      worldPos: { x: number; y: number },
+    ) => {
       const dx = worldPos.x - r.startX
       const dy = worldPos.y - r.startY
 
@@ -101,6 +110,7 @@ export function useResize({
 
     const onMove = (e: any) => {
       const r = activeResizeRef.current
+      // console.log(r)
       if (!r) return
 
       const pos = viewport.toWorld(e.global)
@@ -112,14 +122,10 @@ export function useResize({
         drawShape(r.graphics, r.type, newW, newH)
       }
 
-      drawSelectionRef.current?.({
-        id: r.id,
-        type: r.type,
-        x: newX,
-        y: newY,
-        width: newW,
-        height: newH,
-      })
+      const overrides: SelectionOverrides = new Map([
+        [r.id, { x: newX, y: newY, width: newW, height: newH }],
+      ])
+      drawSelectionRef.current(interaction.selected, overrides)
     }
 
     const onUp = (e: any) => {

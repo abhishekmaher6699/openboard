@@ -3,13 +3,11 @@ import { Container } from "pixi.js"
 import { useEffect, useRef } from "react"
 
 export function useViewport(app: any) {
-
   const viewportRef = useRef<Viewport | null>(null)
   const itemsLayerRef = useRef<Container | null>(null)
   const overlayLayerRef = useRef<Container | null>(null)
 
   useEffect(() => {
-
     if (!app) return
 
     const viewport = new Viewport({
@@ -17,7 +15,7 @@ export function useViewport(app: any) {
       screenHeight: window.innerHeight,
       worldWidth: 100000,
       worldHeight: 100000,
-      events: app.renderer.events
+      events: app.renderer.events,
     })
 
     viewport.drag().wheel().pinch()
@@ -35,7 +33,6 @@ export function useViewport(app: any) {
     overlayLayerRef.current = overlayLayer
 
     return () => viewport.destroy()
-
   }, [app])
 
   return { viewportRef, itemsLayerRef, overlayLayerRef }

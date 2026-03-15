@@ -1,5 +1,5 @@
 import { Graphics } from "pixi.js"
-import type { BoardObject } from "../../../types/board"
+import type { BoardObject } from "../../../../types/board"
 
 export function drawShape(g: Graphics, type: string, width: number, height: number) {
   g.clear()
@@ -8,11 +8,13 @@ export function drawShape(g: Graphics, type: string, width: number, height: numb
     const rx = width / 2
     const ry = height / 2
     g.ellipse(rx, ry, rx, ry)
+    g.fill(0xffff00)
   } else {
     g.rect(0, 0, width, height)
+    g.fill(0xff0000)
+
   }
 
-  g.fill(0xff0000)
 }
 
 export function drawShapeFromObj(g: Graphics, obj: BoardObject) {

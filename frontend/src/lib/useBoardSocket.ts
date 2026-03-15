@@ -13,7 +13,6 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     // const socket = new WebSocket(`ws://192.168.1.74:8000/ws/board/${boardId}/`);
     const socket = new WebSocket(`ws://localhost:8000/ws/board/${boardId}/`);
 
-
     socketRef.current = socket;
 
     socket.onopen = () => {
@@ -31,11 +30,26 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
         );
       }
 
+      if (data.type === "move_many") {
+        setObjects((prev) =>
+          prev.map((obj) => {
+            const move = data.moves.find((m: any) => m.id === obj.id);
+            return move ? { ...obj, x: move.x, y: move.y } : obj;
+          }),
+        );
+      }
+
       if (data.type === "resize_shape") {
         setObjects((prev) =>
           prev.map((obj) =>
             obj.id === data.id
-              ? { ...obj, width: data.width, height: data.height, x:data.x, y:data.y }
+              ? {
+                  ...obj,
+                  width: data.width,
+                  height: data.height,
+                  x: data.x,
+                  y: data.y,
+                }
               : obj,
           ),
         );
@@ -45,11 +59,14 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
         setObjects((prev) => prev.filter((obj) => obj.id !== data.id));
       }
 
+      if (data.type === "delete_many") {
+        setObjects((prev) => prev.filter((obj) => !data.ids.includes(obj.id)));
+      }
+
       if (data.type === "create_shape") {
         setObjects((prev) => [...prev, data.object]);
       }
     };
-
 
     socket.onerror = (err) => {
       console.error("WS error", err);
@@ -77,7 +94,25 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     );
   };
 
-  const sendResize = (id: string, width: number, height: number, x: number, y: number) => {
+  const sendManyMoves = (moves: { id: string; x: number; y: number }[]) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+    socket.send(
+      JSON.stringify({
+        type: "move_many",
+        moves,
+      }),
+    );
+  };
+
+  const sendResize = (
+    id: string,
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+  ) => {
     const socket = socketRef.current;
 
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
@@ -89,7 +124,7 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
         width,
         height,
         x,
-        y
+        y,
       }),
     );
   };
@@ -107,6 +142,18 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     );
   };
 
+  const sendManyDelete = (ids: string[]) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+    socket.send(
+      JSON.stringify({
+        type: "delete_many",
+        ids,
+      }),
+    );
+  };
+
   const sendCreate = (object: BoardObject) => {
     const socket = socketRef.current;
 
@@ -120,5 +167,5 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     );
   };
 
-  return { sendMove, sendDelete, sendCreate, sendResize };
+  return { sendMove, sendManyMoves, sendDelete, sendManyDelete, sendCreate, sendResize };
 }

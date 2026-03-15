@@ -1,13 +1,20 @@
 import { useApplication } from "@pixi/react"
 import { useRef } from "react"
+
 import { useViewport } from "./canvas/useViewport"
-import { useShapeRenderer } from "./canvas/useShapeRenderer"
-import { useDrag } from "./canvas/useDrag"
-import { useSelection } from "./canvas/useSelection"
-import { useCreate } from "./canvas/useCreate"
-import { useDelete } from "./canvas/useDelete"
-import { useResize } from "./canvas/useResize"
-import type { BoardCanvasProps } from "../../types/board"
+import { useShapeRenderer } from "./canvas/rendering/useShapeRenderer"
+
+import { useDrag } from "./canvas/interaction/useDrag"
+import { useSelection } from "./canvas/interaction/useSelection"
+import { useResize } from "./canvas/interaction/useResize"
+import { useMarquee } from "./canvas/interaction/useMarquee"
+
+import { useCreate } from "./canvas/input/useCreate"
+import { useDelete } from "./canvas/input/useDelete"
+
+import { useBoardInteraction } from "./canvas/useInteractionStore"
+
+import type { BoardCanvasProps, DrawSelectionFn } from "../../types/board"
 
 export default function BoardCanvas({
   objects,
@@ -15,23 +22,23 @@ export default function BoardCanvas({
   onMove,
   onCreate,
   onDelete,
+  onManyDelete,
   onResize,
+  onManyMove,
 }: BoardCanvasProps) {
 
   const { app } = useApplication()
+
   const { viewportRef, itemsLayerRef, overlayLayerRef } = useViewport(app)
 
-  const selectedRef = useRef<string | null>(null)
-  const selectionRef = useRef<any>(null)
-  const graphicsMapRef = useRef<Map<string, any>>(new Map())
+  const interactionRef = useBoardInteraction()
 
-  const drawSelectionRef = useRef<(obj: any) => void>(() => {})
+  const objectsRef = useRef<any[]>([])
+  const drawSelectionRef = useRef<DrawSelectionFn>(() => {})
 
   const { attachHandles } = useResize({
     viewportRef,
-    selectedRef,
-    selectionRef,
-    graphicsMapRef,
+    interactionRef,
     onResize,
     drawSelectionRef,
   })
@@ -39,34 +46,50 @@ export default function BoardCanvas({
   const { drawSelection } = useSelection({
     overlayLayerRef,
     viewportRef,
-    selectedRef,
-    selectionRef,
+    interactionRef,
+    objectsRef,
     attachHandles,
   })
 
-  // Keep the ref current after every render
   drawSelectionRef.current = drawSelection
 
-  const { activeDragRef } = useDrag({
+  useDrag({
     viewportRef,
-    selectedRef,
-    selectionRef,
+    interactionRef,
+    objectsRef,
     onMove,
+    onManyMove,
+    drawSelectionRef,
   })
 
   useShapeRenderer({
     objects,
     viewportRef,
     itemsLayerRef,
-    selectedRef,
-    selectionRef,
-    activeDragRef,
-    graphicsMapRef,
-    drawSelection,
+    interactionRef,
+    objectsRef,
+    drawSelectionRef,
   })
 
-  useCreate({ viewportRef, tool, onCreate })
-  useDelete({ selectedRef, selectionRef, onDelete })
+  useMarquee({
+    viewportRef,
+    overlayLayerRef,
+    interactionRef,
+    objectsRef,
+    drawSelectionRef,
+  })
+
+  useCreate({
+    viewportRef,
+    tool,
+    onCreate
+  })
+
+  useDelete({
+    interactionRef,
+    onDelete,
+    onManyDelete
+  })
 
   return null
 }

@@ -1,0 +1,192 @@
+import { Container, Graphics } from "pixi.js";
+import { useEffect } from "react";
+import type {
+  BoardObject,
+  DrawSelectionFn,
+  SelectionOverrides,
+  UseSelectionProps,
+} from "../../../../types/board";
+
+
+export function useSelection({
+  overlayLayerRef,
+  viewportRef,
+  interactionRef,
+  objectsRef,
+  attachHandles,
+}: UseSelectionProps) {
+
+  const interaction = interactionRef.current
+
+   const drawSelection: DrawSelectionFn = (ids: Set<string>, overrides?: SelectionOverrides) => {
+
+    const overlay = overlayLayerRef.current;
+    if (!overlay) return;
+
+    if (interaction.selectionGraphics) {
+      overlay.removeChild(interaction.selectionGraphics);
+      interaction.selectionGraphics.destroy({ children: true });
+      interaction.selectionGraphics = null;
+    }
+
+    if (ids.size === 0) return;
+
+    const rects: {
+      x: number;
+      y: number;
+      type: string;
+      width: number;
+      height: number;
+      id: string;
+    }[] = [];
+
+    ids.forEach((id) => {
+      const obj = objectsRef.current.find((o: BoardObject) => o.id === id);
+      if (!obj) return;
+
+      const pos = overrides?.get(id) ?? {
+        x: obj.x,
+        y: obj.y,
+        width: obj.width ?? 200,
+        height: obj.height ?? 120,
+      };
+
+      rects.push({
+        id,
+        type: obj.type,
+        x: pos.x,
+        y: pos.y,
+        width: pos.width,
+        height: pos.height,
+      });
+    });
+
+    if (rects.length === 0) return;
+
+    const minX = Math.min(...rects.map((r) => r.x));
+    const minY = Math.min(...rects.map((r) => r.y));
+    const maxX = Math.max(...rects.map((r) => r.x + r.width));
+    const maxY = Math.max(...rects.map((r) => r.y + r.height));
+
+    const padding = 4;
+
+    const width = maxX - minX + padding * 2;
+    const height = maxY - minY + padding * 2;
+
+    const container = new Container();
+    container.eventMode = "static";
+    container.cursor = "grab";
+    // container.hitArea = new Rectangle(-padding, -padding, width, height )
+
+    const outline = new Graphics();
+    outline.rect(-padding, -padding, width, height);
+
+    outline.stroke({ width: 2, color: 0x3b82f6, alpha: 0.8 });
+    container.addChild(outline);
+
+    // console.log(...rects[0])
+    if (ids.size === 1 && attachHandles) {
+      attachHandles(container, {
+        ...rects[0],
+        x: 0,
+        y: 0,
+      });
+    }
+
+    container.x = minX;
+    container.y = minY;
+
+    overlay.addChild(container);
+    interaction.selectionGraphics = container;
+  };
+
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const down = (e: any) => {
+      if (interaction.isMarqueeActive) return;
+      const shiftHeld = e.originalEvent?.shiftKey ?? false;
+      if (shiftHeld) return;
+
+      if (interaction.selectionGraphics && interaction.selected.size > 0) {
+        const pos = viewport.toWorld(e.global);
+        const padding = 4;
+
+        const rects = [...interaction.selected]
+          .map((id) => {
+            const obj = objectsRef.current.find(
+              (o: BoardObject) => o.id === id,
+            );
+            if (!obj) return null;
+            return {
+              id,
+              x: obj.x,
+              y: obj.y,
+              width: obj.width ?? 200,
+              height: obj.height ?? 120,
+            };
+          })
+          .filter(Boolean) as {
+              id: string;
+              x: number;
+              y: number;
+              width: number;
+              height: number;
+            }[];
+
+        if (rects.length > 0) {
+          const minX = Math.min(...rects.map((r) => r.x)) - padding;
+          const minY = Math.min(...rects.map((r) => r.y)) - padding;
+          const maxX = Math.max(...rects.map((r) => r.x + r.width)) + padding;
+          const maxY = Math.max(...rects.map((r) => r.y + r.height)) + padding;
+
+          if (
+            pos.x >= minX &&
+            pos.x <= maxX &&
+            pos.y >= minY &&
+            pos.y <= maxY
+          ) {
+            // Click inside bounding box — start drag using first shape as anchor
+            const firstRect = rects[0];
+            const g = interaction.graphicsMap.get(firstRect.id);
+            if (g) {
+              interaction.activeDrag = {
+                id: firstRect.id,
+                graphics: g,
+                offsetX: pos.x - g.x,
+                offsetY: pos.y - g.y,
+              };
+              interaction.isGroupDrag = true;
+              viewport.plugins.pause("drag");
+            }
+            return;
+          }
+        }
+      }
+
+      // Click outside selection — clear
+      interaction.selected = new Set();
+      if (interaction.selectionGraphics) {
+        interaction.selectionGraphics.destroy({ children: true });
+        interaction.selectionGraphics = null;
+      }
+    };
+
+    const up = () => {
+      interaction.isGroupDrag = false;
+    };
+
+    viewport.on("pointerdown", down);
+    viewport.on("pointerup", up);
+    viewport.on("pointeroutside", up);
+    return () => {
+      viewport.on("pointerdown", down);
+      viewport.on("pointerup", up);
+      viewport.on("pointeroutside", up);
+    };
+  }, []);
+
+  return { drawSelection };
+}

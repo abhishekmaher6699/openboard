@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react"
+import type { UseCreateProps } from "../../../../types/board"
 
 export function useCreate({
   viewportRef,
   tool,
-  onCreate
-}: any) {
+  onCreate,
+}: UseCreateProps) {
 
   const toolRef = useRef(tool)
   toolRef.current = tool
@@ -23,7 +24,16 @@ export function useCreate({
 
       if (now - lastClick < 300) {
         const pos = viewport.toWorld(e.global)
-        onCreateRef.current(toolRef.current, pos.x, pos.y)
+
+        const DEFAULT_W = 200
+        const DEFAULT_H = 120
+
+        // Center the shape on the click point
+        onCreateRef.current(
+          toolRef.current,
+          pos.x - DEFAULT_W / 2,
+          pos.y - DEFAULT_H / 2,
+        )
       }
 
       lastClick = now
@@ -31,6 +41,5 @@ export function useCreate({
 
     viewport.on("pointerdown", down)
     return () => viewport.off("pointerdown", down)
-
-  }, []) // ← empty deps, registered once, refs stay current
+  }, [])
 }

@@ -1,86 +1,92 @@
 export interface Owner {
-    id: number
-    username: string
-    email: string
+  id: number
+  username: string
+  email: string
 }
 
 export interface Board {
-    public_id: string
-    id: number
-    name: string
-    invite_code: string
-    created_at: string
-    member_count: number
-    owner: Owner
+  public_id: string
+  id: number
+  name: string
+  invite_code: string
+  created_at: string
+  member_count: number
+  owner: Owner
 }
 
 export interface BoardCardProps {
-    board: Board
-    currentUserId: number | null
-    index?: number
-    onDelete: (publicId: string) => void
-    onLeave: (publicId: string) => void
-    onOpen: (publicId: string) => void
+  board: Board
+  currentUserId: number | null
+  index?: number
+  onDelete: (publicId: string) => void
+  onLeave: (publicId: string) => void
+  onOpen: (publicId: string) => void
 }
 
 export interface ControlProps {
-    onBoardAdded: (board: Board) => void
+  onBoardAdded: (board: Board) => void
 }
 
 export interface BoardMenuProps {
-    board: Board
-    currentUserId: number | null
-    onDelete: (publicId: string) => void
-    onLeave: (publicId: string) => void
+  board: Board
+  currentUserId: number | null
+  onDelete: (publicId: string) => void
+  onLeave: (publicId: string) => void
 }
 
-
-// canvas
-
-import { Viewport } from "pixi-viewport";
-import { Container } from "pixi.js";
-import { Graphics } from "pixi.js"
+import { Viewport } from "pixi-viewport"
+import { Container, Graphics } from "pixi.js"
 
 export type BoardCanvasType = {
-  viewport: Viewport;
-  gridLayer: Container;
-  itemsLayer: Container;
-  uiLayer: Container;
-};
+  viewport: Viewport
+  gridLayer: Container
+  itemsLayer: Container
+  uiLayer: Container
+}
 
 export type BoardCanvasProps = {
-   objects: BoardObject[]
-    tool: "rectangle" | "circle" | "sticky"
-    onMove: (id: string, x: number, y: number) => void
-    onCreate: (type: any, x: number, y: number) => void
-    onDelete: (id: string) => void
-    onResize: (id: string, width: number, height: number, x: number, y: number) => void
-};
+  objects: BoardObject[]
+  tool: "rectangle" | "circle" | "sticky"
+  onMove: (id: string, x: number, y: number) => void
+  onCreate: (type: any, x: number, y: number) => void
+  onDelete: (id: string) => void
+  onManyDelete: (ids: string[]) => void
+  onResize: (id: string, width: number, height: number, x: number, y: number) => void
+  onManyMove: (moves: { id: string; x: number; y: number }[]) => void
+
+}
 
 export type BoardObject = {
   id: string
   type: string
-
   x: number
   y: number
-
   width?: number
   height?: number
-
   rotation?: number
   z_index?: number
-
   data: Record<string, any>
 }
 
 
-export type useResizeProps = {
+export type BoardInteraction = {
+  selected: Set<string>
+  activeDrag: any
+  activeResize: any
+  graphicsMap: Map<string, any>
+  selectionGraphics: any
+  isMarqueeActive: boolean
+  isGroupDrag: boolean
+}
+
+export type SelectionOverrides = Map<string, { x: number; y: number; width: number; height: number }>
+export type DrawSelectionFn = (ids: Set<string>, overrides?: SelectionOverrides) => void
+
+export type UseResizeProps = {
   viewportRef: React.RefObject<any>
-  selectedRef: React.RefObject<string | null>
-  selectionRef: React.RefObject<any>
-  graphicsMapRef: React.RefObject<Map<string, any>>
+  interactionRef: React.RefObject<BoardInteraction>
   onResize: (id: string, width: number, height: number, x: number, y: number) => void
-  drawSelectionRef: React.RefObject<(obj: any) => void>
+  drawSelectionRef: React.RefObject<DrawSelectionFn>
 }
 
 export type ResizeHandle = "nw" | "ne" | "se" | "sw"
@@ -98,15 +104,52 @@ export type ActiveResize = {
   type: string
 }
 
-
 export type UseShapeRendererProps = {
   objects: BoardObject[]
   viewportRef: React.RefObject<any>
   itemsLayerRef: React.RefObject<any>
-  selectedRef: React.RefObject<string | null>
-  selectionRef: React.RefObject<any>
-  activeDragRef: React.RefObject<any>
-  graphicsMapRef: React.RefObject<Map<string, Graphics>>
-  drawSelection: (obj: BoardObject) => void
+  interactionRef: React.RefObject<BoardInteraction>
+  objectsRef: React.RefObject<BoardObject[]>
+  drawSelectionRef: React.RefObject<DrawSelectionFn>
 }
+
+export type UseSelectionProps = {
+  overlayLayerRef: React.RefObject<any>
+  viewportRef: React.RefObject<any>
+  attachHandles?: (container: any, obj: any) => void
+  objectsRef: React.RefObject<BoardObject[]>
+  interactionRef: React.RefObject<BoardInteraction>
+}
+
+export type UseMarqueeProps = {
+  viewportRef: React.RefObject<any>
+  overlayLayerRef: React.RefObject<any>
+  interactionRef: React.RefObject<BoardInteraction>
+  objectsRef: React.RefObject<BoardObject[]>
+  drawSelectionRef: React.RefObject<DrawSelectionFn>
+
+}
+
+export type UseDragProps = {
+  viewportRef: React.RefObject<any>;
+  interactionRef: React.RefObject<BoardInteraction>
+  objectsRef: React.RefObject<BoardObject[]>;
+  onMove: (id: string, x: number, y: number) => void;
+  onManyMove: (moves: { id: string; x: number; y: number }[]) => void;
+  drawSelectionRef: React.RefObject<DrawSelectionFn>;
+ 
+};
+
+export type UseCreateProps = {
+  viewportRef: React.RefObject<any>
+  tool: string
+  onCreate: (type: string, x: number, y: number) => void
+}
+
+export type UseDeleteProps = {
+  
+  interactionRef: React.RefObject<BoardInteraction>
+  onDelete: (id: string) => void;
+  onManyDelete: (ids: string[]) => void;
+};
 

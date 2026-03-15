@@ -21,7 +21,14 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     getBoardObjects(boardId).then(setObjects);
   }, [boardId]);
 
-  const { sendMove, sendDelete, sendCreate, sendResize } = useBoardSocket({
+  const {
+    sendMove,
+    sendManyMoves,
+    sendDelete,
+    sendManyDelete,
+    sendCreate,
+    sendResize,
+  } = useBoardSocket({
     boardId,
     setObjects,
   });
@@ -42,7 +49,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
       const created = await createObject(boardId, newObject);
       setObjects((prev) => [...prev, created]);
       sendCreate(created);
-      console.log(created)
+      console.log(created);
     } catch (err) {
       console.error("Create failed", err);
     }
@@ -61,6 +68,26 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     }
   };
 
+  const moveManyObjects = async (
+    moves: { id: string; x: number; y: number }[],
+  ) => {
+    setObjects((prev) =>
+      prev.map((obj) => {
+        const move = moves.find((m) => m.id === obj.id);
+        return move ? { ...obj, x: move.x, y: move.y } : obj;
+      }),
+    );
+
+    try {
+      sendManyMoves(moves);
+      await Promise.all(
+        moves.map((m) => updateObject(boardId, m.id, { x: m.x, y: m.y })),
+      );
+    } catch (err) {
+      console.error("Move many failed", err);
+    }
+  };
+
   const deleteObject = async (id: string) => {
     setObjects((prev) => prev.filter((obj) => obj.id !== id));
 
@@ -69,6 +96,17 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
       sendDelete(id);
     } catch (err) {
       console.error("Delete failed", err);
+    }
+  };
+
+  const deleteManyObjects = async (ids: string[]) => {
+    setObjects((prev) => prev.filter((obj) => !ids.includes(obj.id)));
+
+    try {
+      sendManyDelete(ids);
+      await Promise.all(ids.map((id) => deleteObjectApi(boardId, id)));
+    } catch (err) {
+      console.error("Delete many failed", err);
     }
   };
 
@@ -110,7 +148,9 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
           onCreate={createNewObject}
           onMove={moveObject}
           onDelete={deleteObject}
+          onManyDelete={deleteManyObjects}
           onResize={resizeObject}
+          onManyMove={moveManyObjects}
         />
       </Application>
     </>
