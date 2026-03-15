@@ -69,7 +69,7 @@ export function useResize({
         })
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-        objectSnapshots.forEach(({ obj, graphics }) => {
+        objectSnapshots.forEach(({ obj }) => {
           minX = Math.min(minX, obj.x)
           minY = Math.min(minY, obj.y)
           maxX = Math.max(maxX, obj.x + obj.width)
@@ -172,7 +172,7 @@ export function useResize({
       const pos = viewport.toWorld(e.global)
       const { newGX, newGY, scaleX, scaleY } = computeScale(r, pos)
 
-      r.objectSnapshots.forEach(({ obj, graphics }, id) => {
+      r.objectSnapshots.forEach(({ obj }, id) => {
         const newX = newGX + (obj.x - r.groupX) * scaleX
         const newY = newGY + (obj.y - r.groupY) * scaleY
         const newW = Math.max(MIN_SIZE, obj.width * scaleX)
