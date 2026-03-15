@@ -26,8 +26,7 @@ export function useDelete({
       interaction.selected = new Set();
 
       if (interaction.selectionGraphics) {
-        interaction.selectionGraphics.destroy({ children: true });
-        interaction.selectionGraphics = null;
+        interaction.selectionGraphics.visible = false;
       }
     };
 

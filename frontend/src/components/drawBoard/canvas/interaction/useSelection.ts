@@ -1,47 +1,45 @@
 import { Container, Graphics } from "pixi.js";
 import { useEffect } from "react";
 import type {
-  BoardObject,
   DrawSelectionFn,
   SelectionOverrides,
   UseSelectionProps,
 } from "../../../../types/board";
 
-
 export function useSelection({
   overlayLayerRef,
   viewportRef,
   interactionRef,
-  objectsRef,
+  objectMapRef,
   attachHandles,
 }: UseSelectionProps) {
+  const interaction = interactionRef.current;
 
-  const interaction = interactionRef.current
-
-   const drawSelection: DrawSelectionFn = (ids: Set<string>, overrides?: SelectionOverrides) => {
-
+  const drawSelection: DrawSelectionFn = (
+    ids: Set<string>,
+    overrides?: SelectionOverrides,
+  ) => {
     const overlay = overlayLayerRef.current;
     if (!overlay) return;
 
-    if (interaction.selectionGraphics) {
-      overlay.removeChild(interaction.selectionGraphics);
-      interaction.selectionGraphics.destroy({ children: true });
-      interaction.selectionGraphics = null;
+    if (ids.size === 0) {
+      if (interaction.selectionGraphics) {
+        interaction.selectionGraphics.visible = false;
+      }
+      return;
     }
 
-    if (ids.size === 0) return;
-
     const rects: {
+      id: string;
+      type: string;
       x: number;
       y: number;
-      type: string;
       width: number;
       height: number;
-      id: string;
     }[] = [];
 
     ids.forEach((id) => {
-      const obj = objectsRef.current.find((o: BoardObject) => o.id === id);
+      const obj = objectMapRef.current.get(id);
       if (!obj) return;
 
       const pos = overrides?.get(id) ?? {
@@ -69,22 +67,37 @@ export function useSelection({
     const maxY = Math.max(...rects.map((r) => r.y + r.height));
 
     const padding = 4;
-
     const width = maxX - minX + padding * 2;
     const height = maxY - minY + padding * 2;
 
-    const container = new Container();
-    container.eventMode = "static";
-    container.cursor = "grab";
-    // container.hitArea = new Rectangle(-padding, -padding, width, height )
+    let container = interaction.selectionGraphics;
 
-    const outline = new Graphics();
+    if (!container) {
+      container = new Container();
+      container.eventMode = "static";
+      container.cursor = "grab";
+
+      overlay.addChild(container);
+      interaction.selectionGraphics = container;
+    }
+
+    container.visible = true;
+
+    let outline = interaction.selectionOutline;
+
+    if (!outline) {
+      outline = new Graphics();
+      interaction.selectionOutline = outline;
+      container.addChild(outline);
+    }
+
+    outline.clear();
     outline.rect(-padding, -padding, width, height);
-
     outline.stroke({ width: 2, color: 0x3b82f6, alpha: 0.8 });
+
+    container.removeChildren();
     container.addChild(outline);
 
-    // console.log(...rects[0])
     if (ids.size === 1 && attachHandles) {
       attachHandles(container, {
         ...rects[0],
@@ -95,11 +108,7 @@ export function useSelection({
 
     container.x = minX;
     container.y = minY;
-
-    overlay.addChild(container);
-    interaction.selectionGraphics = container;
   };
-
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -116,9 +125,7 @@ export function useSelection({
 
         const rects = [...interaction.selected]
           .map((id) => {
-            const obj = objectsRef.current.find(
-              (o: BoardObject) => o.id === id,
-            );
+            const obj = objectMapRef.current.get(id);
             if (!obj) return null;
             return {
               id,
@@ -129,12 +136,12 @@ export function useSelection({
             };
           })
           .filter(Boolean) as {
-              id: string;
-              x: number;
-              y: number;
-              width: number;
-              height: number;
-            }[];
+          id: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        }[];
 
         if (rects.length > 0) {
           const minX = Math.min(...rects.map((r) => r.x)) - padding;
@@ -166,11 +173,10 @@ export function useSelection({
         }
       }
 
-      // Click outside selection — clear
       interaction.selected = new Set();
+
       if (interaction.selectionGraphics) {
-        interaction.selectionGraphics.destroy({ children: true });
-        interaction.selectionGraphics = null;
+        interaction.selectionGraphics.visible = false;
       }
     };
 

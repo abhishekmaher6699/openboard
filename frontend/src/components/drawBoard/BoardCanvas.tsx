@@ -14,7 +14,7 @@ import { useDelete } from "./canvas/input/useDelete"
 
 import { useBoardInteraction } from "./canvas/useInteractionStore"
 
-import type { BoardCanvasProps, DrawSelectionFn } from "../../types/board"
+import type { BoardCanvasProps, BoardObject, DrawSelectionFn } from "../../types/board"
 
 export default function BoardCanvas({
   objects,
@@ -30,10 +30,10 @@ export default function BoardCanvas({
   const { app } = useApplication()
 
   const { viewportRef, itemsLayerRef, overlayLayerRef } = useViewport(app)
-
   const interactionRef = useBoardInteraction()
-
   const objectsRef = useRef<any[]>([])
+  const objectMapRef = useRef<Map<string, BoardObject>>(new Map())
+  
   const drawSelectionRef = useRef<DrawSelectionFn>(() => {})
 
   const { attachHandles } = useResize({
@@ -48,6 +48,7 @@ export default function BoardCanvas({
     viewportRef,
     interactionRef,
     objectsRef,
+    objectMapRef,
     attachHandles,
   })
 
@@ -57,6 +58,7 @@ export default function BoardCanvas({
     viewportRef,
     interactionRef,
     objectsRef,
+    objectMapRef,
     onMove,
     onManyMove,
     drawSelectionRef,
@@ -68,6 +70,7 @@ export default function BoardCanvas({
     itemsLayerRef,
     interactionRef,
     objectsRef,
+    objectMapRef,
     drawSelectionRef,
   })
 

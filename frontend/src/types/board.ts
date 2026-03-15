@@ -36,6 +36,7 @@ export interface BoardMenuProps {
 
 import { Viewport } from "pixi-viewport"
 import { Container, Graphics } from "pixi.js"
+import React from "react"
 
 export type BoardCanvasType = {
   viewport: Viewport
@@ -74,7 +75,8 @@ export type BoardInteraction = {
   activeDrag: any
   activeResize: any
   graphicsMap: Map<string, any>
-  selectionGraphics: any
+  selectionGraphics: Container 
+  selectionOutline: Graphics | null
   isMarqueeActive: boolean
   isGroupDrag: boolean
 }
@@ -110,6 +112,7 @@ export type UseShapeRendererProps = {
   itemsLayerRef: React.RefObject<any>
   interactionRef: React.RefObject<BoardInteraction>
   objectsRef: React.RefObject<BoardObject[]>
+  objectMapRef: React.RefObject<Map<string, BoardObject>>
   drawSelectionRef: React.RefObject<DrawSelectionFn>
 }
 
@@ -118,6 +121,7 @@ export type UseSelectionProps = {
   viewportRef: React.RefObject<any>
   attachHandles?: (container: any, obj: any) => void
   objectsRef: React.RefObject<BoardObject[]>
+  objectMapRef: React.RefObject<Map<string, BoardObject>>
   interactionRef: React.RefObject<BoardInteraction>
 }
 
@@ -126,6 +130,7 @@ export type UseMarqueeProps = {
   overlayLayerRef: React.RefObject<any>
   interactionRef: React.RefObject<BoardInteraction>
   objectsRef: React.RefObject<BoardObject[]>
+  
   drawSelectionRef: React.RefObject<DrawSelectionFn>
 
 }
@@ -134,6 +139,7 @@ export type UseDragProps = {
   viewportRef: React.RefObject<any>;
   interactionRef: React.RefObject<BoardInteraction>
   objectsRef: React.RefObject<BoardObject[]>;
+  objectMapRef: React.RefObject<Map<string, BoardObject>>
   onMove: (id: string, x: number, y: number) => void;
   onManyMove: (moves: { id: string; x: number; y: number }[]) => void;
   drawSelectionRef: React.RefObject<DrawSelectionFn>;

@@ -9,6 +9,7 @@ export function useBoardInteraction() {
     activeResize: null as any,
     graphicsMap: new Map<string, any>(),
     selectionGraphics: null as any,
+    selectionOutline: null as any,
     isMarqueeActive: false,
     isGroupDrag: false,
   })

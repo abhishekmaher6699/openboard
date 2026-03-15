@@ -9,12 +9,17 @@ export function useShapeRenderer({
   itemsLayerRef,
   interactionRef,
   objectsRef,
+  objectMapRef,
   drawSelectionRef,
 }: UseShapeRendererProps) {
 
-  objectsRef.current = objects
+
   const interaction = interactionRef.current
 
+  useEffect(() => {
+      objectsRef.current = objects
+      objectMapRef.current = new Map(objects.map(o => [o.id, o]))
+    }, [objects])
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -46,7 +51,7 @@ export function useShapeRenderer({
         g.on("pointerdown", (e: any) => {
           e.stopPropagation()
 
-          const currentObj = objectsRef.current.find(o => o.id === obj.id)
+          const currentObj = objectMapRef.current.get(obj.id)
           if (!currentObj) return
 
           const shiftHeld = e.originalEvent?.shiftKey ?? false

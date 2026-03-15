@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import type {
-  BoardObject,
   SelectionOverrides,
   UseDragProps
 } from "../../../../types/board";
@@ -9,7 +8,7 @@ import type {
 export function useDrag({
   viewportRef,
   interactionRef,
-  objectsRef,
+  objectMapRef,
   onMove,
   onManyMove,
   drawSelectionRef,
@@ -45,7 +44,7 @@ export function useDrag({
       const overrides: SelectionOverrides = new Map();
       interaction.selected.forEach((id: string) => {
         const g = interaction.graphicsMap.get(id);
-        const obj = objectsRef.current.find((o: BoardObject) => o.id === id);
+        const obj = objectMapRef.current.get(id)
         if (!g || !obj) return;
         overrides.set(id, {
           x: g.x,
