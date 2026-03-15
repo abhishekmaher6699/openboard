@@ -13,7 +13,6 @@ export function useSelection({
   objectMapRef,
   attachHandles,
 }: UseSelectionProps) {
-  const interaction = interactionRef.current;
 
   const drawSelection: DrawSelectionFn = (
     ids: Set<string>,
@@ -21,6 +20,8 @@ export function useSelection({
   ) => {
     const overlay = overlayLayerRef.current;
     if (!overlay) return;
+
+    const interaction = interactionRef.current;
 
     if (ids.size === 0) {
       if (interaction.selectionGraphics) {
@@ -76,7 +77,6 @@ export function useSelection({
       container = new Container();
       container.eventMode = "static";
       container.cursor = "grab";
-
       overlay.addChild(container);
       interaction.selectionGraphics = container;
     }
@@ -98,11 +98,18 @@ export function useSelection({
     container.removeChildren();
     container.addChild(outline);
 
-    if (ids.size === 1 && attachHandles) {
+    // Pass the full bounding box to attachHandles regardless of selection size.
+    // useResize reads interaction.selected to snapshot all objects internally.
+    if (attachHandles) {
       attachHandles(container, {
-        ...rects[0],
+        // id/type from first rect — useResize uses interaction.selected for the full set
+        id: rects[0].id,
+        type: rects[0].type,
+        // position is relative to container (which sits at minX/minY)
         x: 0,
         y: 0,
+        width: maxX - minX,
+        height: maxY - minY,
       });
     }
 
@@ -113,6 +120,8 @@ export function useSelection({
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
+
+    const interaction = interactionRef.current;
 
     const down = (e: any) => {
       if (interaction.isMarqueeActive) return;
@@ -155,7 +164,6 @@ export function useSelection({
             pos.y >= minY &&
             pos.y <= maxY
           ) {
-            // Click inside bounding box — start drag using first shape as anchor
             const firstRect = rects[0];
             const g = interaction.graphicsMap.get(firstRect.id);
             if (g) {
@@ -187,10 +195,12 @@ export function useSelection({
     viewport.on("pointerdown", down);
     viewport.on("pointerup", up);
     viewport.on("pointeroutside", up);
+
+    // Refs are intentionally omitted from deps — they're stable by design
     return () => {
-      viewport.on("pointerdown", down);
-      viewport.on("pointerup", up);
-      viewport.on("pointeroutside", up);
+      viewport.off("pointerdown", down);
+      viewport.off("pointerup", up);
+      viewport.off("pointeroutside", up);
     };
   }, []);
 

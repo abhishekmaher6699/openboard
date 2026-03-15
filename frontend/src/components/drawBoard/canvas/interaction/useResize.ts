@@ -1,7 +1,12 @@
 import { Graphics } from "pixi.js"
 import { useEffect, useRef } from "react"
-import type { ActiveResize, ResizeHandle, SelectionOverrides, UseResizeProps } from "../../../../types/board"
-import { drawShape } from "../interaction/shapeUtils"
+import type {
+  ActiveResize,
+  ResizeHandle,
+  SelectionOverrides,
+  UseResizeProps,
+} from "../../../../types/board"
+import { drawShapeFromObj } from "../interaction/shapeUtils"
 
 const HANDLE_SIZE = 10
 const MIN_SIZE = 40
@@ -19,20 +24,18 @@ function getCursor(handle: ResizeHandle) {
 export function useResize({
   viewportRef,
   interactionRef,
+  objectMapRef,
   onResize,
   drawSelectionRef,
 }: UseResizeProps) {
 
-  const interaction = interactionRef.current
   const activeResizeRef = useRef<ActiveResize | null>(null)
 
-  function attachHandles(container: any, obj: any) {
+  function attachHandles(container: any, groupRect: { x: number; y: number; width: number; height: number }) {
     const padding = 4
     const handles: ResizeHandle[] = ["nw", "ne", "se", "sw"]
 
     handles.forEach((handle) => {
-
-      console.log(obj.type)
       const h = new Graphics()
       h.rect(-HANDLE_SIZE / 2, -HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE)
       h.fill(0xffffff)
@@ -40,9 +43,8 @@ export function useResize({
       h.eventMode = "static"
       h.cursor = getCursor(handle)
 
-      // obj.x and obj.y are 0 here because container is already at shape position
-      h.x = handle.includes("e") ? obj.width + padding : -padding
-      h.y = handle.includes("s") ? obj.height + padding : -padding
+      h.x = handle.includes("e") ? groupRect.width + padding : -padding
+      h.y = handle.includes("s") ? groupRect.height + padding : -padding
 
       h.on("pointerdown", (e: any) => {
         e.stopPropagation()
@@ -50,22 +52,39 @@ export function useResize({
         const viewport = viewportRef.current
         if (!viewport) return
 
+        const interaction = interactionRef.current
         const worldPos = viewport.toWorld(e.global)
-        const graphics = interaction.graphicsMap?.get(obj.id)
 
-        interaction.selected = new Set([obj.id])
+        const objectSnapshots: ActiveResize["objectSnapshots"] = new Map()
+
+        interaction.selected.forEach((id: string) => {
+          const obj = objectMapRef.current.get(id)
+          const g = interaction.graphicsMap?.get(id)
+          if (!obj || !g) return
+
+          objectSnapshots.set(id, {
+            obj: {...obj},
+            graphics: g
+          })
+        })
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+        objectSnapshots.forEach(({ obj, graphics }) => {
+          minX = Math.min(minX, obj.x)
+          minY = Math.min(minY, obj.y)
+          maxX = Math.max(maxX, obj.x + obj.width)
+          maxY = Math.max(maxY, obj.y + obj.height)
+        })
 
         activeResizeRef.current = {
-          id: obj.id,
           handle,
           startX: worldPos.x,
           startY: worldPos.y,
-          startObjX: graphics?.x ?? obj.x,
-          startObjY: graphics?.y ?? obj.y,
-          startWidth: obj.width,
-          startHeight: obj.height,
-          graphics,
-          type: obj.type,
+          groupX: minX,
+          groupY: minY,
+          groupWidth: maxX - minX,
+          groupHeight: maxY - minY,
+          objectSnapshots,
         }
 
         viewport.plugins.pause("drag")
@@ -75,56 +94,74 @@ export function useResize({
     })
   }
 
+
   useEffect(() => {
     const viewport = viewportRef.current
     if (!viewport) return
 
-    const computeNewDimensions = (
-      r: ActiveResize,
-      worldPos: { x: number; y: number },
-    ) => {
+    const interaction = interactionRef.current
+
+    const computeScale = (r: ActiveResize, worldPos: { x: number; y: number }) => {
       const dx = worldPos.x - r.startX
       const dy = worldPos.y - r.startY
 
-      let newW = r.startWidth
-      let newH = r.startHeight
-      let newX = r.startObjX
-      let newY = r.startObjY
+      let newGW = r.groupWidth
+      let newGH = r.groupHeight
+      let newGX = r.groupX
+      let newGY = r.groupY
 
       if (r.handle === "nw" || r.handle === "sw") {
-        newW = Math.max(MIN_SIZE, r.startWidth - dx)
-        newX = r.startObjX + (r.startWidth - newW)
+        newGW = Math.max(MIN_SIZE, r.groupWidth - dx)
+        newGX = r.groupX + (r.groupWidth - newGW)
       } else {
-        newW = Math.max(MIN_SIZE, r.startWidth + dx)
+        newGW = Math.max(MIN_SIZE, r.groupWidth + dx)
       }
 
       if (r.handle === "nw" || r.handle === "ne") {
-        newH = Math.max(MIN_SIZE, r.startHeight - dy)
-        newY = r.startObjY + (r.startHeight - newH)
+        newGH = Math.max(MIN_SIZE, r.groupHeight - dy)
+        newGY = r.groupY + (r.groupHeight - newGH)
       } else {
-        newH = Math.max(MIN_SIZE, r.startHeight + dy)
+        newGH = Math.max(MIN_SIZE, r.groupHeight + dy)
       }
 
-      return { newW, newH, newX, newY }
+      return {
+        newGX,
+        newGY,
+        scaleX: newGW / r.groupWidth,
+        scaleY: newGH / r.groupHeight,
+      }
     }
 
     const onMove = (e: any) => {
       const r = activeResizeRef.current
-      // console.log(r)
       if (!r) return
 
       const pos = viewport.toWorld(e.global)
-      const { newW, newH, newX, newY } = computeNewDimensions(r, pos)
+      const { newGX, newGY, scaleX, scaleY } = computeScale(r, pos)
 
-      if (r.graphics) {
-        r.graphics.x = newX
-        r.graphics.y = newY
-        drawShape(r.graphics, r.type, newW, newH)
-      }
+      const overrides: SelectionOverrides = new Map()
 
-      const overrides: SelectionOverrides = new Map([
-        [r.id, { x: newX, y: newY, width: newW, height: newH }],
-      ])
+      r.objectSnapshots.forEach(({ obj, graphics }, id) => {
+        const newX = newGX + (obj.x - r.groupX) * scaleX
+        const newY = newGY + (obj.y - r.groupY) * scaleY
+        const newW = Math.max(MIN_SIZE, obj.width * scaleX)
+        const newH = Math.max(MIN_SIZE, obj.height * scaleY)
+
+        if (graphics) {
+          graphics.x = newX
+          graphics.y = newY
+          drawShapeFromObj(graphics, {
+            ...obj,
+            x: newX,
+            y: newY,
+            width: newW,
+            height: newH
+          })
+        }
+
+        overrides.set(id, { x: newX, y: newY, width: newW, height: newH })
+      })
+
       drawSelectionRef.current(interaction.selected, overrides)
     }
 
@@ -133,9 +170,15 @@ export function useResize({
       if (!r) return
 
       const pos = viewport.toWorld(e.global)
-      const { newW, newH, newX, newY } = computeNewDimensions(r, pos)
+      const { newGX, newGY, scaleX, scaleY } = computeScale(r, pos)
 
-      onResize(r.id, newW, newH, newX, newY)
+      r.objectSnapshots.forEach(({ obj, graphics }, id) => {
+        const newX = newGX + (obj.x - r.groupX) * scaleX
+        const newY = newGY + (obj.y - r.groupY) * scaleY
+        const newW = Math.max(MIN_SIZE, obj.width * scaleX)
+        const newH = Math.max(MIN_SIZE, obj.height * scaleY)
+        onResize(id, newW, newH, newX, newY)
+      })
 
       activeResizeRef.current = null
       viewport.plugins.resume("drag")

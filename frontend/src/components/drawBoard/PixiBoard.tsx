@@ -2,7 +2,7 @@ import { Application } from "@pixi/react";
 import { useState, useEffect } from "react";
 import BoardCanvas from "./BoardCanvas";
 import useBoardSocket from "../../lib/useBoardSocket";
-import type { BoardObject } from "../../types/board";
+import type { BoardObject, Tool } from "../../types/board";
 import { getBoardObjects } from "../../api/board_objects";
 import {
   createObject,
@@ -11,11 +11,12 @@ import {
 } from "../../api/board_objects";
 import BoardControls from "./features/BoardControls";
 
+
+
 export default function PixiBoard({ boardId }: { boardId: string }) {
   const [objects, setObjects] = useState<BoardObject[]>([]);
-  const [tool, setTool] = useState<"rectangle" | "circle" | "sticky">(
-    "rectangle",
-  );
+  const [tool, setTool] = useState<Tool>("rectangle")
+  const [color, setColor] = useState("#ff0000");
 
   useEffect(() => {
     getBoardObjects(boardId).then(setObjects);
@@ -34,6 +35,9 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   });
 
   const createNewObject = async (type: string, x: number, y: number) => {
+    
+    const fill = color.replace("#", "0x");
+
     const newObject = {
       type,
       x,
@@ -41,7 +45,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
       width: 200,
       height: 120,
       data: {
-        fill: "0xff0000",
+        fill: fill,
       },
     };
 
@@ -131,9 +135,36 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     }
   };
 
+  const updateColor = async (ids: string[], color: string) => {
+    const fill = color.replace("#", "0x");
+
+    setObjects((prev) =>
+      prev.map((obj) =>
+        ids.includes(obj.id) ? { ...obj, data: { ...obj.data, fill } } : obj,
+      ),
+    );
+
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          updateObject(boardId, id, {
+            data: { fill },
+          }),
+        ),
+      );
+    } catch (err) {
+      console.error("Color update failed", err);
+    }
+  };
+
   return (
     <>
-      <BoardControls tool={tool} setTool={setTool} />
+      <BoardControls
+        tool={tool}
+        setTool={setTool}
+        color={color}
+        setColor={setColor}
+      />
 
       <Application
         resizeTo={window}

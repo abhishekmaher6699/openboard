@@ -1,55 +1,87 @@
-import React from "react";
+import React from "react"
+
+type Tool = "rectangle" | "circle" | "sticky" | "triangle" | "diamond"
 
 type Props = {
-  tool: "rectangle" | "circle" | "sticky";
-  setTool: React.Dispatch<
-    React.SetStateAction<"rectangle" | "circle" | "sticky">
-  >;
-};
+  tool: Tool
+  setTool: React.Dispatch<React.SetStateAction<Tool>>
+  color: string
+  setColor: (color: string) => void
+}
 
-const BoardControls = ({tool, setTool}: Props) => {
+const presetColors = [
+  "#ef4444",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#8b5cf6",
+  "#000000"
+]
+
+export default function BoardControls({ tool, setTool, color, setColor }: Props) {
+
   return (
-    <div className="absolute flex gap-3 bottom-5 left-80 items-center justify-between">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white shadow-xl rounded-xl px-4 py-2 border">
+
+      {/* Shape Tools */}
+
       <button
         onClick={() => setTool("rectangle")}
-        className={`font-bold py-2 px-4 border rounded
-      ${
-        tool === "rectangle"
-          ? "bg-blue-500 text-white border-blue-500"
-          : "bg-white hover:bg-gray-200 text-gray-800 border-gray-300"
-      }
-    `}
+        className={`px-3 py-2 rounded ${tool === "rectangle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
       >
-        Rectangle
+        ▭
       </button>
 
       <button
         onClick={() => setTool("circle")}
-        className={`font-bold py-2 px-4 border rounded
-      ${
-        tool === "circle"
-          ? "bg-blue-500 text-white border-blue-500"
-          : "bg-white hover:bg-gray-200 text-gray-800 border-gray-300"
-      }
-    `}
+        className={`px-3 py-2 rounded ${tool === "circle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
       >
-        Circle
+        ◯
+      </button>
+
+      <button
+        onClick={() => setTool("triangle")}
+        className={`px-3 py-2 rounded ${tool === "triangle" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+      >
+        ▲
+      </button>
+
+      <button
+        onClick={() => setTool("diamond")}
+        className={`px-3 py-2 rounded ${tool === "diamond" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+      >
+        ◆
       </button>
 
       <button
         onClick={() => setTool("sticky")}
-        className={`font-bold py-2 px-4 border rounded
-      ${
-        tool === "sticky"
-          ? "bg-blue-500 text-white border-blue-500"
-          : "bg-white hover:bg-gray-200 text-gray-800 border-gray-300"
-      }
-    `}
+        className={`px-3 py-2 rounded ${tool === "sticky" ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
       >
-        Sticky
+        🗒
       </button>
-    </div>
-  );
-};
 
-export default BoardControls;
+      <div className="w-px h-6 bg-gray-200 mx-2" />
+
+      {/* Color Presets */}
+
+      {presetColors.map((c) => (
+        <button
+          key={c}
+          onClick={() => setColor(c)}
+          className="w-6 h-6 rounded-full border"
+          style={{ background: c }}
+        />
+      ))}
+
+      {/* Color Picker */}
+
+      <input
+        type="color"
+        value={color}
+        onChange={(e) => setColor(e.target.value)}
+        className="w-8 h-8 border rounded cursor-pointer"
+      />
+
+    </div>
+  )
+}

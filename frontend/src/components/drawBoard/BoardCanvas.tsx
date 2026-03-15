@@ -33,12 +33,13 @@ export default function BoardCanvas({
   const interactionRef = useBoardInteraction()
   const objectsRef = useRef<any[]>([])
   const objectMapRef = useRef<Map<string, BoardObject>>(new Map())
-  
+
   const drawSelectionRef = useRef<DrawSelectionFn>(() => {})
 
   const { attachHandles } = useResize({
     viewportRef,
     interactionRef,
+    objectMapRef,
     onResize,
     drawSelectionRef,
   })

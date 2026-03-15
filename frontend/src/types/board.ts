@@ -1,3 +1,7 @@
+import { Viewport } from "pixi-viewport"
+import { Container, Graphics } from "pixi.js"
+import React from "react"
+
 export interface Owner {
   id: number
   username: string
@@ -23,6 +27,15 @@ export interface BoardCardProps {
   onOpen: (publicId: string) => void
 }
 
+
+export type Tool =
+  | "rectangle"
+  | "circle"
+  | "sticky"
+  | "triangle"
+  | "diamond"
+
+
 export interface ControlProps {
   onBoardAdded: (board: Board) => void
 }
@@ -34,9 +47,6 @@ export interface BoardMenuProps {
   onLeave: (publicId: string) => void
 }
 
-import { Viewport } from "pixi-viewport"
-import { Container, Graphics } from "pixi.js"
-import React from "react"
 
 export type BoardCanvasType = {
   viewport: Viewport
@@ -47,7 +57,7 @@ export type BoardCanvasType = {
 
 export type BoardCanvasProps = {
   objects: BoardObject[]
-  tool: "rectangle" | "circle" | "sticky"
+  tool: Tool
   onMove: (id: string, x: number, y: number) => void
   onCreate: (type: any, x: number, y: number) => void
   onDelete: (id: string) => void
@@ -62,21 +72,21 @@ export type BoardObject = {
   type: string
   x: number
   y: number
-  width?: number
-  height?: number
+  width: number
+  height: number
   rotation?: number
   z_index?: number
   data: Record<string, any>
-}
 
+}
 
 export type BoardInteraction = {
   selected: Set<string>
   activeDrag: any
   activeResize: any
   graphicsMap: Map<string, any>
-  selectionGraphics: Container 
-  selectionOutline: Graphics | null
+  selectionGraphics: any
+  selectionOutline: any
   isMarqueeActive: boolean
   isGroupDrag: boolean
 }
@@ -87,23 +97,24 @@ export type DrawSelectionFn = (ids: Set<string>, overrides?: SelectionOverrides)
 export type UseResizeProps = {
   viewportRef: React.RefObject<any>
   interactionRef: React.RefObject<BoardInteraction>
-  onResize: (id: string, width: number, height: number, x: number, y: number) => void
+  objectMapRef: React.RefObject<Map<string, BoardObject>>
+  onResize: (id: string, w: number, h: number, x: number, y: number) => void
   drawSelectionRef: React.RefObject<DrawSelectionFn>
 }
 
 export type ResizeHandle = "nw" | "ne" | "se" | "sw"
 
 export type ActiveResize = {
-  id: string
   handle: ResizeHandle
   startX: number
   startY: number
-  startObjX: number
-  startObjY: number
-  startWidth: number
-  startHeight: number
-  graphics: any
-  type: string
+  // Bounding box of the whole selection at drag start
+  groupX: number
+  groupY: number
+  groupWidth: number
+  groupHeight: number
+  // Per-object snapshot keyed by id
+  objectSnapshots: Map<string, ObjectSnapshot>
 }
 
 export type UseShapeRendererProps = {
@@ -159,3 +170,7 @@ export type UseDeleteProps = {
   onManyDelete: (ids: string[]) => void;
 };
 
+export type ObjectSnapshot = {
+  obj: BoardObject,
+  graphics: Graphics
+}
