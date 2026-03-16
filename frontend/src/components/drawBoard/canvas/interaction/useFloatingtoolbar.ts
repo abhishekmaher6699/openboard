@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react"
+import { useState, useCallback } from "react"
 import type { BoardObject } from "../../../../types/board"
 
 export type ToolbarState = {
@@ -39,7 +39,7 @@ export function useFloatingToolbar(
       const x = pos?.x ?? obj.x
       const y = pos?.y ?? obj.y
       const w = pos?.width ?? obj.width ?? 200
-      const h = pos?.height ?? obj.height ?? 120
+      // const h = pos?.height ?? obj.height ?? 120
 
       minX = Math.min(minX, x)
       minY = Math.min(minY, y)

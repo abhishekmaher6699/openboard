@@ -1,5 +1,5 @@
 import { Container } from "pixi.js"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import type { UseShapeRendererProps } from "../../../../types/board"
 import { drawShapeFromObj } from "./../interaction/shapeUtils"
 
@@ -16,6 +16,9 @@ export function useShapeRenderer({
 }: UseShapeRendererProps) {
 
   const interaction = interactionRef.current
+
+  // track last rendered version of each object to skip unnecessary redraws
+  const renderedRef = useRef<Map<string, string>>(new Map())
 
   useEffect(() => {
     objectsRef.current = objects
@@ -36,6 +39,7 @@ export function useShapeRenderer({
         itemsLayer.removeChild(container)
         container.destroy({ children: true })
         graphicsMap.delete(id)
+        renderedRef.current.delete(id)
       }
     })
 
@@ -53,7 +57,6 @@ export function useShapeRenderer({
         let lastUpTime = 0
 
         container.on("pointerup", (e: any) => {
-          // ignore if editor is already open
           if (interaction.isEditing) return
 
           const now = Date.now()
@@ -63,7 +66,14 @@ export function useShapeRenderer({
             interaction.activeDrag = null
             interaction.isGroupDrag = false
             viewport.plugins.resume("drag")
-            onTextOpen(obj.id)
+            interaction.selected = new Set()
+            if (interaction.selectionGraphics) {
+              interaction.selectionGraphics.visible = false
+            }
+            const currentObj = objectMapRef.current.get(obj.id)
+            if (currentObj?.type === "sticky" || currentObj?.type === "text") {
+              onTextOpen(obj.id)
+            }
             return
           }
           lastUpTime = now
@@ -71,15 +81,16 @@ export function useShapeRenderer({
 
         container.on("pointerdown", (e: any) => {
           e.stopPropagation()
-
-          // ignore if editor is open
           if (interaction.isEditing) return
 
           const currentObj = objectMapRef.current.get(obj.id)
           if (!currentObj) return
 
           if (toolRef.current === "text") {
-            onTextOpen(obj.id)
+            const currentObj = objectMapRef.current.get(obj.id)
+            if (currentObj?.type === "sticky" || currentObj?.type === "text") {
+              onTextOpen(obj.id)
+            }
             return
           }
 
@@ -115,14 +126,21 @@ export function useShapeRenderer({
 
       const isDragging = interaction.activeDrag?.id === obj.id
       if (!isDragging) {
-        container.x = obj.x
-        container.y = obj.y
-        drawShapeFromObj(container, obj)
-        // in useShapeRenderer, after drawShapeFromObj
-        container.zIndex = obj.z_index ?? 0
+        // only redraw if something actually changed
+        const key = `${obj.x},${obj.y},${obj.width},${obj.height},${JSON.stringify(obj.data)}`
+        if (renderedRef.current.get(obj.id) !== key) {
+          container.x = obj.x
+          container.y = obj.y
+          drawShapeFromObj(container, obj)
+          renderedRef.current.set(obj.id, key)
+        }
       }
 
-      itemsLayer.sortChildren()
+      // always keep zIndex in sync
+      container.zIndex = obj.z_index ?? 0
     })
+
+    // force pixi to re-sort after all zIndex values are updated
+    itemsLayer.sortChildren()
   }, [objects])
 }

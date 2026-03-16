@@ -33,12 +33,13 @@ export function useBoardObjects({
   const createNewObject = async (type: string, x: number, y: number): Promise<string | null> => {
     const fill = color.replace("#", "0x");
     const maxZ = Math.max(0, ...objectsRef.current.map((o) => o.z_index ?? 0));
+    const defaultFill = type === "sticky" ? "0xffd700" : fill
     const newObject = {
       type, x, y,
-      width: type === "text" ? 200 : 200,
-      height: type === "text" ? 80 : 120,
+      width: type === "sticky" ? 200 : type === "text" ? 200 : 200,
+      height: type === "sticky" ? 200 : type === "text" ? 80 : 120,
       z_index: maxZ + 1000,
-      data: { fill, text: "" },
+      data: { fill: defaultFill, text: "" },
     };
     try {
       const created = await createObject(boardId, newObject);

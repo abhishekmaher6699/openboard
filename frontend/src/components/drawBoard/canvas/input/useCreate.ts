@@ -32,6 +32,8 @@ export function useCreate({
       // ignore if editor is open
       if (interaction?.isEditing) return
 
+      if (e.target !== viewport) return
+
       const now = Date.now()
       const currentTool = toolRef.current
 

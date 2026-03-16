@@ -1,4 +1,5 @@
 import React from "react"
+import TextColorPicker from "./Textcolorpicker"
 import type { ToolbarState } from "../canvas/interaction/useFloatingtoolbar"
 import type { BoardObject } from "../../../types/board"
 
@@ -16,6 +17,7 @@ type Props = {
   onFontSize: (size: number) => void
   onAlign: (align: "left" | "center" | "right") => void
   onFontFamily: (font: string) => void
+  onTextColor: (color: string) => void
 }
 
 const FONT_SIZES = [12, 14, 16, 18, 24, 32, 48]
@@ -51,14 +53,14 @@ export default function FloatingToolbar({
   onFontSize,
   onAlign,
   onFontFamily,
+  onTextColor,
 }: Props) {
   if (!toolbar.visible) return null
 
-  const hasText = toolbar.types.some(t => t === "text") ||
-    toolbar.ids.some(id => objects.find(o => o.id === id)?.data?.text)
+  const hasText = toolbar.types.some(t => t === "text" || t === "sticky")
 
   const firstTextObj = objects.find(o =>
-    toolbar.ids.includes(o.id) && (o.type === "text" || o.data?.text)
+    toolbar.ids.includes(o.id) && (o.type === "text" || o.type === "sticky")
   )
   const textStyle = firstTextObj?.data ?? {}
 
@@ -108,6 +110,12 @@ export default function FloatingToolbar({
               </option>
             ))}
           </select>
+
+          {/* Text color */}
+          <TextColorPicker
+            value={firstTextObj?.data?.textColor ?? "#1a1a1a"}
+            onChange={onTextColor}
+          />
 
           {/* Font size */}
           <select

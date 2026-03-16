@@ -65,6 +65,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     handleFontSize,
     handleAlign,
     handleFontFamily,
+    handleTextColor,
   } = useBoardToolbar({
     boardId,
     selectedIds,
@@ -102,6 +103,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         onFontSize={handleFontSize}
         onAlign={handleAlign}
         onFontFamily={handleFontFamily}
+        onTextColor={handleTextColor}
       />
 
       <Application resizeTo={window} background={0xffffff} antialias resolution={window.devicePixelRatio} autoDensity>

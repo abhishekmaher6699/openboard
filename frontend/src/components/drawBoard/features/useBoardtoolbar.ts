@@ -23,7 +23,6 @@ export function useBoardToolbar({
   selectedIds,
   objectsRef,
   setObjects,
-  createNewObject,
   sendCreate,
   sendUpdate,
   deleteObject,
@@ -179,6 +178,7 @@ export function useBoardToolbar({
   const handleFontSize = (size: number) => updateTextStyle(selectedIds, { fontSize: size });
   const handleAlign = (align: "left" | "center" | "right") => updateTextStyle(selectedIds, { align });
   const handleFontFamily = (fontFamily: string) => updateTextStyle(selectedIds, { fontFamily });
+  const handleTextColor = (color: string) => updateTextStyle(selectedIds, { textColor: color });
 
   return {
     handleDelete,
@@ -192,5 +192,6 @@ export function useBoardToolbar({
     handleFontSize,
     handleAlign,
     handleFontFamily,
+    handleTextColor,
   };
 }

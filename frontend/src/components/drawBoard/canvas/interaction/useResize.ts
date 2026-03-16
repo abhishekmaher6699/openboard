@@ -21,6 +21,12 @@ function getCursor(handle: ResizeHandle) {
   return map[handle]
 }
 
+// sticky notes are square — constrain height to width
+function applyAspectConstraint(type: string, w: number, h: number): { w: number; h: number } {
+  if (type === "sticky") return { w, h: w }
+  return { w, h }
+}
+
 export function useResize({
   viewportRef,
   interactionRef,
@@ -144,11 +150,15 @@ export function useResize({
       r.objectSnapshots.forEach(({ obj, graphics }, id) => {
         const newX = newGX + (obj.x - r.groupX) * scaleX
         const newY = newGY + (obj.y - r.groupY) * scaleY
-        const newW = Math.max(MIN_SIZE, obj.width * scaleX)
-        const newH = Math.max(MIN_SIZE, obj.height * scaleY)
+        let newW = Math.max(MIN_SIZE, obj.width * scaleX)
+        let newH = Math.max(MIN_SIZE, obj.height * scaleY)
+
+        // constrain sticky notes to square
+        const constrained = applyAspectConstraint(obj.type, newW, newH)
+        newW = constrained.w
+        newH = constrained.h
 
         if (graphics) {
-          // just reposition and scale the container — no redraw, no text layout
           graphics.x = newX
           graphics.y = newY
           graphics.scale.set(newW / obj.width, newH / obj.height)
@@ -172,10 +182,14 @@ export function useResize({
       r.objectSnapshots.forEach(({ obj, graphics }, id) => {
         const newX = newGX + (obj.x - r.groupX) * scaleX
         const newY = newGY + (obj.y - r.groupY) * scaleY
-        const newW = Math.max(MIN_SIZE, obj.width * scaleX)
-        const newH = Math.max(MIN_SIZE, obj.height * scaleY)
+        let newW = Math.max(MIN_SIZE, obj.width * scaleX)
+        let newH = Math.max(MIN_SIZE, obj.height * scaleY)
 
-        // reset scale and do a proper redraw at final size
+        // constrain sticky notes to square
+        const constrained = applyAspectConstraint(obj.type, newW, newH)
+        newW = constrained.w
+        newH = constrained.h
+
         if (graphics) {
           graphics.scale.set(1, 1)
           drawShapeFromObj(graphics, {
@@ -190,7 +204,6 @@ export function useResize({
         resizes.push({ id, width: newW, height: newH, x: newX, y: newY })
       })
 
-      // single object uses existing onResize, multiple uses batch
       if (resizes.length === 1) {
         const r = resizes[0]
         onResize(r.id, r.width, r.height, r.x, r.y)
