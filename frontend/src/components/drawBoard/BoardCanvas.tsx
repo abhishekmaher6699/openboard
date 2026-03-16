@@ -31,21 +31,24 @@ export default function BoardCanvas({
   onManyMove,
   onSelectionChange,
   onTextChange,
-  onResizeMany
+  onResizeMany,
+  onToolbarUpdate,
+  viewportRef: externalViewportRef,
+  objectMapRef: externalObjectMapRef,
+  clearSelectionRef,
 }: BoardCanvasProps) {
   const { app } = useApplication();
 
-  const { viewportRef, itemsLayerRef, overlayLayerRef } = useViewport(app);
+  const { viewportRef, itemsLayerRef, overlayLayerRef } = useViewport(app, externalViewportRef);
   const interactionRef = useBoardInteraction();
   const objectsRef = useRef<any[]>([]);
-  const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
+  const objectMapRef = externalObjectMapRef ?? useRef<Map<string, BoardObject>>(new Map());
   const drawSelectionRef = useRef<DrawSelectionFn>(() => {});
 
-  // keep tool in a ref so event handlers always see the latest value
   const toolRef = useRef<Tool>(tool);
   toolRef.current = tool;
 
-  const { openEditor, closeEditor } = useTextEdit({
+  const { openEditor } = useTextEdit({
     viewportRef,
     interactionRef,
     objectMapRef,
@@ -59,7 +62,7 @@ export default function BoardCanvas({
     objectMapRef,
     onResize,
     drawSelectionRef,
-    onResizeMany
+    onResizeMany,
   });
 
   const { drawSelection } = useSelection({
@@ -70,9 +73,20 @@ export default function BoardCanvas({
     objectMapRef,
     attachHandles,
     onSelectionChange,
+    onToolbarUpdate,
   });
 
   drawSelectionRef.current = drawSelection;
+
+  // expose clearSelection to PixiBoard via ref
+  if (clearSelectionRef) {
+    clearSelectionRef.current = () => {
+      const interaction = interactionRef.current
+      interaction.selected = new Set()
+      if (interaction.selectionGraphics) interaction.selectionGraphics.visible = false
+      drawSelectionRef.current(new Set())
+    }
+  }
 
   useDrag({
     viewportRef,
@@ -110,20 +124,10 @@ export default function BoardCanvas({
     onCreate,
     onToolChange: setTool,
     interactionRef,
-    // when text tool clicks empty canvas, create a text object then open editor
     onTextCreate: async (x: number, y: number) => {
-      console.log("onTextCreate start");
       const id = await onCreate("text", x, y);
-      console.log("onCreate resolved, id:", id);
-      // polling...
       let attempts = 0;
       const waitForObj = () => {
-        console.log(
-          "polling attempt",
-          attempts,
-          "has obj:",
-          objectMapRef.current.has(id!),
-        );
         if (objectMapRef.current.has(id!)) {
           openEditor(id!);
           return;

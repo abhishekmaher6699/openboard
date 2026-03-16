@@ -118,7 +118,11 @@ export function useShapeRenderer({
         container.x = obj.x
         container.y = obj.y
         drawShapeFromObj(container, obj)
+        // in useShapeRenderer, after drawShapeFromObj
+        container.zIndex = obj.z_index ?? 0
       }
+
+      itemsLayer.sortChildren()
     })
   }, [objects])
 }

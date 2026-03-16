@@ -11,22 +11,28 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
 
   useEffect(() => {
     const socket = new WebSocket(`ws://localhost:8000/ws/board/${boardId}/`);
-
     socketRef.current = socket;
 
-    socket.onopen = () => {
-      console.log("WS connected");
-    };
+    socket.onopen = () => console.log("WS connected");
+    socket.onerror = (err) => console.error("WS error", err);
+    socket.onclose = () => console.log("WS closed");
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === "move_shape") {
+      // single object update — merges any changed fields
+      if (data.type === "update_object") {
         setObjects((prev) =>
-          prev.map((obj) =>
-            obj.id === data.id ? { ...obj, x: data.x, y: data.y } : obj,
-          ),
-        );
+          prev.map((obj) => {
+            if (obj.id !== data.id) return obj
+            const changes = data.changes
+            // if data field is being updated, merge it instead of replacing
+            if (changes.data) {
+              return { ...obj, ...changes, data: { ...obj.data, ...changes.data } }
+            }
+            return { ...obj, ...changes }
+          })
+        )
       }
 
       if (data.type === "move_many") {
@@ -34,23 +40,16 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
           prev.map((obj) => {
             const move = data.moves.find((m: any) => m.id === obj.id);
             return move ? { ...obj, x: move.x, y: move.y } : obj;
-          }),
+          })
         );
       }
 
-      if (data.type === "resize_shape") {
+      if (data.type === "resize_many") {
         setObjects((prev) =>
-          prev.map((obj) =>
-            obj.id === data.id
-              ? {
-                  ...obj,
-                  width: data.width,
-                  height: data.height,
-                  x: data.x,
-                  y: data.y,
-                }
-              : obj,
-          ),
+          prev.map((obj) => {
+            const r = data.resizes.find((r: any) => r.id === obj.id);
+            return r ? { ...obj, x: r.x, y: r.y, width: r.width, height: r.height } : obj;
+          })
         );
       }
 
@@ -63,133 +62,49 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
       }
 
       if (data.type === "create_shape") {
-        setObjects((prev) => [...prev, data.object]);
+        setObjects((prev) => {
+          // avoid duplicates if we created it ourselves
+          if (prev.some(o => o.id === data.object.id)) return prev
+          return [...prev, data.object]
+        });
       }
-
-      if (data.type === "resize_many") {
-        setObjects((prev) =>
-          prev.map((obj) => {
-            const r = data.resizes.find((r: any) => r.id === obj.id);
-            return r
-              ? { ...obj, x: r.x, y: r.y, width: r.width, height: r.height }
-              : obj;
-          }),
-        );
-      }
-
-      if (data.type === "update_text") {
-        setObjects((prev) =>
-          prev.map((obj) =>
-            obj.id === data.id
-              ? { ...obj, data: { ...obj.data, text: data.text } }
-              : obj,
-          ),
-        );
-      }
-
-      if (data.type === "update_color") {
-        setObjects((prev) =>
-          prev.map((obj) =>
-            data.ids.includes(obj.id)
-              ? { ...obj, data: { ...obj.data, fill: data.fill } }
-              : obj,
-          ),
-        );
-      }
-    };
-
-    socket.onerror = (err) => {
-      console.error("WS error", err);
-    };
-
-    socket.onclose = () => {
-      console.log("WS closed");
     };
 
     return () => socket.close();
   }, [boardId]);
 
-  const sendMove = (id: string, x: number, y: number) => {
+  const send = (payload: object) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "move_shape", id, x, y }));
+    socket.send(JSON.stringify(payload));
   };
 
-  const sendManyMoves = (moves: { id: string; x: number; y: number }[]) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "move_many", moves }));
+  // single object update — send any changed fields
+  const sendUpdate = (id: string, changes: Partial<BoardObject> & { data?: Record<string, any> }) => {
+    send({ type: "update_object", id, changes });
   };
 
-  const sendResize = (
-    id: string,
-    width: number,
-    height: number,
-    x: number,
-    y: number,
-  ) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(
-      JSON.stringify({ type: "resize_shape", id, width, height, x, y }),
-    );
-  };
+  const sendManyMoves = (moves: { id: string; x: number; y: number }[]) =>
+    send({ type: "move_many", moves });
 
-  const sendDelete = (id: string) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "delete_shape", id }));
-  };
+  const sendResizeMany = (resizes: { id: string; width: number; height: number; x: number; y: number }[]) =>
+    send({ type: "resize_many", resizes });
 
-  const sendManyDelete = (ids: string[]) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "delete_many", ids }));
-  };
+  const sendDelete = (id: string) =>
+    send({ type: "delete_shape", id });
 
-  const sendCreate = (object: BoardObject) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "create_shape", object }));
-  };
+  const sendManyDelete = (ids: string[]) =>
+    send({ type: "delete_many", ids });
 
-  const sendColorUpdate = (ids: string[], fill: string) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "update_color", ids, fill }));
-  };
-
-  const sendResizeMany = (
-    resizes: {
-      id: string;
-      width: number;
-      height: number;
-      x: number;
-      y: number;
-    }[],
-  ) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "resize_many", resizes }));
-  };
-
-  const sendTextUpdate = (id: string, text: string) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "update_text", id, text }));
-  };
+  const sendCreate = (object: BoardObject) =>
+    send({ type: "create_shape", object });
 
   return {
-    sendMove,
+    sendUpdate,
     sendManyMoves,
+    sendResizeMany,
     sendDelete,
     sendManyDelete,
     sendCreate,
-    sendResize,
-    sendResizeMany,
-    sendColorUpdate,
-    sendTextUpdate,
   };
 }
-
-// append to the returned object and add this function:

@@ -13,6 +13,7 @@ export function useSelection({
   objectMapRef,
   attachHandles,
   onSelectionChange,
+  onToolbarUpdate,
 }: UseSelectionProps) {
 
   const drawSelection: DrawSelectionFn = (
@@ -24,13 +25,13 @@ export function useSelection({
 
     const interaction = interactionRef.current;
 
-    // notify PixiBoard whenever selection changes
     onSelectionChange?.([...ids])
 
     if (ids.size === 0) {
       if (interaction.selectionGraphics) {
         interaction.selectionGraphics.visible = false;
       }
+      onToolbarUpdate?.(new Set(), undefined)
       return;
     }
 
@@ -115,6 +116,9 @@ export function useSelection({
 
     container.x = minX;
     container.y = minY;
+
+    // update toolbar position and selection info
+    onToolbarUpdate?.(ids, overrides)
   };
 
   useEffect(() => {
@@ -183,6 +187,7 @@ export function useSelection({
 
       interaction.selected = new Set();
       onSelectionChange?.([]);
+      onToolbarUpdate?.(new Set(), undefined)
 
       if (interaction.selectionGraphics) {
         interaction.selectionGraphics.visible = false;

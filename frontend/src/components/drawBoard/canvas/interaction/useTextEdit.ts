@@ -24,7 +24,6 @@ export function useTextEdit({
     const viewport = viewportRef.current
     if (!viewport) return
 
-    // disable canvas immediately, before creating textarea
     const canvas = viewport.renderer?.view as HTMLCanvasElement
     if (canvas) canvas.style.pointerEvents = "none"
 

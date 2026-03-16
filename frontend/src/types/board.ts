@@ -67,6 +67,10 @@ export type BoardCanvasProps = {
   onSelectionChange?: (ids: string[]) => void
   onTextChange: (id: string, text: string) => void
   onResizeMany: (resizes: { id: string; width: number; height: number; x: number; y: number }[]) => void
+  onToolbarUpdate?: (ids: Set<string>, overrides?: SelectionOverrides) => void
+  viewportRef?: React.RefObject<any>
+  objectMapRef?: React.RefObject<Map<string, BoardObject>>
+  clearSelectionRef?: React.RefObject<() => void>
 }
 
 export type BoardObject = {
@@ -138,6 +142,8 @@ export type UseSelectionProps = {
   objectMapRef: React.RefObject<Map<string, BoardObject>>
   interactionRef: React.RefObject<BoardInteraction>
   onSelectionChange?: (ids: string[]) => void
+  onToolbarUpdate?: (ids: Set<string>, overrides?: SelectionOverrides) => void
+  clearSelectionRef?: React.RefObject<() => void>
 }
 
 export type UseMarqueeProps = {
@@ -160,12 +166,11 @@ export type UseDragProps = {
 
 export type UseCreateProps = {
   viewportRef: React.RefObject<any>
+   interactionRef: React.RefObject<BoardInteraction>
   tool: string
   onCreate: (type: string, x: number, y: number) => Promise<string | null>
   onToolChange?: (tool: Tool) => void
   onTextCreate?: (x: number, y: number) => void
-  interactionRef: React.RefObject<BoardInteraction>
-
 }
 
 export type UseDeleteProps = {

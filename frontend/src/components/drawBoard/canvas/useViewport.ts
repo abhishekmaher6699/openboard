@@ -2,8 +2,10 @@ import { Viewport } from "pixi-viewport"
 import { Container } from "pixi.js"
 import { useEffect, useRef } from "react"
 
-export function useViewport(app: any) {
-  const viewportRef = useRef<Viewport | null>(null)
+export function useViewport(app: any, externalViewportRef?: React.RefObject<Viewport | null>) {
+  const internalViewportRef = useRef<Viewport | null>(null)
+  const viewportRef = externalViewportRef ?? internalViewportRef
+
   const itemsLayerRef = useRef<Container | null>(null)
   const overlayLayerRef = useRef<Container | null>(null)
 
@@ -22,6 +24,8 @@ export function useViewport(app: any) {
 
     const itemsLayer = new Container()
     const overlayLayer = new Container()
+
+    itemsLayer.sortableChildren = true
 
     viewport.addChild(itemsLayer)
     viewport.addChild(overlayLayer)
