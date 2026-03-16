@@ -12,5 +12,6 @@ export function useBoardInteraction() {
     selectionOutline: null as any,
     isMarqueeActive: false,
     isGroupDrag: false,
+    isEditing: false,
   })
 }

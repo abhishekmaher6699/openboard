@@ -1,4 +1,4 @@
-import { Graphics } from "pixi.js"
+import { Container } from "pixi.js"
 import { useEffect } from "react"
 import type { UseShapeRendererProps } from "../../../../types/board"
 import { drawShapeFromObj } from "./../interaction/shapeUtils"
@@ -11,15 +11,16 @@ export function useShapeRenderer({
   objectsRef,
   objectMapRef,
   drawSelectionRef,
+  toolRef,
+  onTextOpen,
 }: UseShapeRendererProps) {
-
 
   const interaction = interactionRef.current
 
   useEffect(() => {
-      objectsRef.current = objects
-      objectMapRef.current = new Map(objects.map(o => [o.id, o]))
-    }, [objects])
+    objectsRef.current = objects
+    objectMapRef.current = new Map(objects.map(o => [o.id, o]))
+  }, [objects])
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -29,30 +30,58 @@ export function useShapeRenderer({
     if (!viewport || !itemsLayer) return
 
     const nextIds = new Set(objects.map(o => o.id))
-    graphicsMap.forEach((g, id) => {
+
+    graphicsMap.forEach((container, id) => {
       if (!nextIds.has(id)) {
-        itemsLayer.removeChild(g)
-        g.destroy()
+        itemsLayer.removeChild(container)
+        container.destroy({ children: true })
         graphicsMap.delete(id)
       }
     })
 
     objects.forEach(obj => {
-      let g = graphicsMap.get(obj.id)
+      let container = graphicsMap.get(obj.id)
 
-      if (!g) {
-        g = new Graphics()
-        g.eventMode = "static"
-        g.cursor = "pointer"
+      if (!container) {
+        container = new Container()
+        container.eventMode = "static"
+        container.cursor = "pointer"
 
-        itemsLayer.addChild(g)
-        graphicsMap.set(obj.id, g)
+        itemsLayer.addChild(container)
+        graphicsMap.set(obj.id, container)
 
-        g.on("pointerdown", (e: any) => {
+        let lastUpTime = 0
+
+        container.on("pointerup", (e: any) => {
+          // ignore if editor is already open
+          if (interaction.isEditing) return
+
+          const now = Date.now()
+          if (now - lastUpTime < 300) {
+            e.stopPropagation()
+            lastUpTime = 0
+            interaction.activeDrag = null
+            interaction.isGroupDrag = false
+            viewport.plugins.resume("drag")
+            onTextOpen(obj.id)
+            return
+          }
+          lastUpTime = now
+        })
+
+        container.on("pointerdown", (e: any) => {
           e.stopPropagation()
+
+          // ignore if editor is open
+          if (interaction.isEditing) return
 
           const currentObj = objectMapRef.current.get(obj.id)
           if (!currentObj) return
+
+          if (toolRef.current === "text") {
+            onTextOpen(obj.id)
+            return
+          }
 
           const shiftHeld = e.originalEvent?.shiftKey ?? false
           const alreadySelected = interaction.selected.has(obj.id)
@@ -75,9 +104,9 @@ export function useShapeRenderer({
             const pos = viewport.toWorld(e.global)
             interaction.activeDrag = {
               id: obj.id,
-              graphics: g,
-              offsetX: pos.x - g!.x,
-              offsetY: pos.y - g!.y,
+              graphics: container,
+              offsetX: pos.x - container!.x,
+              offsetY: pos.y - container!.y,
             }
             viewport.plugins.pause("drag")
           }
@@ -86,9 +115,9 @@ export function useShapeRenderer({
 
       const isDragging = interaction.activeDrag?.id === obj.id
       if (!isDragging) {
-        g.x = obj.x
-        g.y = obj.y
-        drawShapeFromObj(g, obj)
+        container.x = obj.x
+        container.y = obj.y
+        drawShapeFromObj(container, obj)
       }
     })
   }, [objects])

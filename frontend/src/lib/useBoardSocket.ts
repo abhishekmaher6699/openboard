@@ -42,7 +42,13 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
         setObjects((prev) =>
           prev.map((obj) =>
             obj.id === data.id
-              ? { ...obj, width: data.width, height: data.height, x: data.x, y: data.y }
+              ? {
+                  ...obj,
+                  width: data.width,
+                  height: data.height,
+                  x: data.x,
+                  y: data.y,
+                }
               : obj,
           ),
         );
@@ -58,6 +64,16 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
 
       if (data.type === "create_shape") {
         setObjects((prev) => [...prev, data.object]);
+      }
+
+      if (data.type === "update_text") {
+        setObjects((prev) =>
+          prev.map((obj) =>
+            obj.id === data.id
+              ? { ...obj, data: { ...obj.data, text: data.text } }
+              : obj,
+          ),
+        );
       }
 
       if (data.type === "update_color") {
@@ -94,10 +110,18 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     socket.send(JSON.stringify({ type: "move_many", moves }));
   };
 
-  const sendResize = (id: string, width: number, height: number, x: number, y: number) => {
+  const sendResize = (
+    id: string,
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+  ) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "resize_shape", id, width, height, x, y }));
+    socket.send(
+      JSON.stringify({ type: "resize_shape", id, width, height, x, y }),
+    );
   };
 
   const sendDelete = (id: string) => {
@@ -124,5 +148,22 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     socket.send(JSON.stringify({ type: "update_color", ids, fill }));
   };
 
-  return { sendMove, sendManyMoves, sendDelete, sendManyDelete, sendCreate, sendResize, sendColorUpdate };
+  const sendTextUpdate = (id: string, text: string) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({ type: "update_text", id, text }));
+  };
+
+  return {
+    sendMove,
+    sendManyMoves,
+    sendDelete,
+    sendManyDelete,
+    sendCreate,
+    sendResize,
+    sendColorUpdate,
+    sendTextUpdate,
+  };
 }
+
+// append to the returned object and add this function:

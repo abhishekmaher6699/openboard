@@ -1,20 +1,23 @@
-import { useApplication } from "@pixi/react"
-import { useRef } from "react"
+import { useApplication } from "@pixi/react";
+import { useRef } from "react";
 
-import { useViewport } from "./canvas/useViewport"
-import { useShapeRenderer } from "./canvas/rendering/useShapeRenderer"
+import { useViewport } from "./canvas/useViewport";
+import { useShapeRenderer } from "./canvas/rendering/useShapeRenderer";
+import { useDrag } from "./canvas/interaction/useDrag";
+import { useSelection } from "./canvas/interaction/useSelection";
+import { useResize } from "./canvas/interaction/useResize";
+import { useMarquee } from "./canvas/interaction/useMarquee";
+import { useTextEdit } from "./canvas/interaction/useTextEdit";
+import { useCreate } from "./canvas/input/useCreate";
+import { useDelete } from "./canvas/input/useDelete";
+import { useBoardInteraction } from "./canvas/useInteractionStore";
 
-import { useDrag } from "./canvas/interaction/useDrag"
-import { useSelection } from "./canvas/interaction/useSelection"
-import { useResize } from "./canvas/interaction/useResize"
-import { useMarquee } from "./canvas/interaction/useMarquee"
-
-import { useCreate } from "./canvas/input/useCreate"
-import { useDelete } from "./canvas/input/useDelete"
-
-import { useBoardInteraction } from "./canvas/useInteractionStore"
-
-import type { BoardCanvasProps, BoardObject, DrawSelectionFn } from "../../types/board"
+import type {
+  BoardCanvasProps,
+  BoardObject,
+  DrawSelectionFn,
+  Tool,
+} from "../../types/board";
 
 export default function BoardCanvas({
   objects,
@@ -27,16 +30,27 @@ export default function BoardCanvas({
   onResize,
   onManyMove,
   onSelectionChange,
+  onTextChange,
 }: BoardCanvasProps) {
+  const { app } = useApplication();
 
-  const { app } = useApplication()
+  const { viewportRef, itemsLayerRef, overlayLayerRef } = useViewport(app);
+  const interactionRef = useBoardInteraction();
+  const objectsRef = useRef<any[]>([]);
+  const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
+  const drawSelectionRef = useRef<DrawSelectionFn>(() => {});
 
-  const { viewportRef, itemsLayerRef, overlayLayerRef } = useViewport(app)
-  const interactionRef = useBoardInteraction()
-  const objectsRef = useRef<any[]>([])
-  const objectMapRef = useRef<Map<string, BoardObject>>(new Map())
+  // keep tool in a ref so event handlers always see the latest value
+  const toolRef = useRef<Tool>(tool);
+  toolRef.current = tool;
 
-  const drawSelectionRef = useRef<DrawSelectionFn>(() => {})
+  const { openEditor, closeEditor } = useTextEdit({
+    viewportRef,
+    interactionRef,
+    objectMapRef,
+    onTextChange,
+    onToolChange: setTool,
+  });
 
   const { attachHandles } = useResize({
     viewportRef,
@@ -44,7 +58,7 @@ export default function BoardCanvas({
     objectMapRef,
     onResize,
     drawSelectionRef,
-  })
+  });
 
   const { drawSelection } = useSelection({
     overlayLayerRef,
@@ -54,9 +68,9 @@ export default function BoardCanvas({
     objectMapRef,
     attachHandles,
     onSelectionChange,
-  })
+  });
 
-  drawSelectionRef.current = drawSelection
+  drawSelectionRef.current = drawSelection;
 
   useDrag({
     viewportRef,
@@ -66,7 +80,7 @@ export default function BoardCanvas({
     onMove,
     onManyMove,
     drawSelectionRef,
-  })
+  });
 
   useShapeRenderer({
     objects,
@@ -76,7 +90,9 @@ export default function BoardCanvas({
     objectsRef,
     objectMapRef,
     drawSelectionRef,
-  })
+    toolRef,
+    onTextOpen: openEditor,
+  });
 
   useMarquee({
     viewportRef,
@@ -84,20 +100,43 @@ export default function BoardCanvas({
     interactionRef,
     objectsRef,
     drawSelectionRef,
-  })
+  });
 
   useCreate({
     viewportRef,
     tool,
     onCreate,
-    onToolChange: setTool
-  })
+    onToolChange: setTool,
+    interactionRef,
+    // when text tool clicks empty canvas, create a text object then open editor
+    onTextCreate: async (x: number, y: number) => {
+      console.log("onTextCreate start");
+      const id = await onCreate("text", x, y);
+      console.log("onCreate resolved, id:", id);
+      // polling...
+      let attempts = 0;
+      const waitForObj = () => {
+        console.log(
+          "polling attempt",
+          attempts,
+          "has obj:",
+          objectMapRef.current.has(id!),
+        );
+        if (objectMapRef.current.has(id!)) {
+          openEditor(id!);
+          return;
+        }
+        if (attempts++ < 20) setTimeout(waitForObj, 50);
+      };
+      waitForObj();
+    },
+  });
 
   useDelete({
     interactionRef,
     onDelete,
-    onManyDelete
-  })
+    onManyDelete,
+  });
 
-  return null
+  return null;
 }

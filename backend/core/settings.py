@@ -81,10 +81,18 @@ ASGI_APPLICATION = "core.asgi.application"
 ALLOWED_HOSTS = ["*"]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "http://192.168.1.74:5173"
+    "http://127.0.0.1:5173",
+    "http://10.134.82.170:5173",
 ]
 
-# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "authorization",
+]
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

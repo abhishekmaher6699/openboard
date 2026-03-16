@@ -8,6 +8,8 @@ export function useCreate({
   tool,
   onCreate,
   onToolChange,
+  onTextCreate,
+  interactionRef,
 }: UseCreateProps) {
 
   const toolRef = useRef(tool)
@@ -16,33 +18,59 @@ export function useCreate({
   const onCreateRef = useRef(onCreate)
   onCreateRef.current = onCreate
 
-  const onToolChangeRef = useRef(onToolChange)
-  onToolChangeRef.current = onToolChange
+  const onTextCreateRef = useRef(onTextCreate)
+  onTextCreateRef.current = onTextCreate
 
   useEffect(() => {
     const viewport = viewportRef.current
     if (!viewport) return
 
+    const interaction = interactionRef?.current
+    let lastUpTime = 0
+
+    const up = (e: any) => {
+      // ignore if editor is open
+      if (interaction?.isEditing) return
+
+      const now = Date.now()
+      const currentTool = toolRef.current
+
+      if (now - lastUpTime < 300 && currentTool === "select") {
+        lastUpTime = 0
+        const pos = viewport.toWorld(e.global)
+        onTextCreateRef.current?.(pos.x - 100, pos.y - 40)
+        return
+      }
+
+      lastUpTime = now
+    }
+
     const down = (e: any) => {
-      // only create when a shape tool is active, not on plain select/drag clicks
-      if (!SHAPE_TOOLS.includes(toolRef.current)) return
+      // ignore if editor is open
+      if (interaction?.isEditing) return
+
+      const currentTool = toolRef.current
+
+      if (currentTool === "text") {
+        e.stopPropagation()
+        const pos = viewport.toWorld(e.global)
+        onTextCreateRef.current?.(pos.x - 100, pos.y - 40)
+        return
+      }
+
+      if (!SHAPE_TOOLS.includes(currentTool)) return
 
       const pos = viewport.toWorld(e.global)
-
-      const DEFAULT_W = 200
-      const DEFAULT_H = 120
-
-      onCreateRef.current(
-        toolRef.current,
-        pos.x - DEFAULT_W / 2,
-        pos.y - DEFAULT_H / 2,
-      )
-
-      // switch back to select after placing a shape
-      onToolChangeRef.current?.("select")
+      onCreateRef.current(currentTool, pos.x - 100, pos.y - 60)
+      onToolChange?.("select")
     }
 
     viewport.on("pointerdown", down)
-    return () => viewport.off("pointerdown", down)
+    viewport.on("pointerup", up)
+
+    return () => {
+      viewport.off("pointerdown", down)
+      viewport.off("pointerup", up)
+    }
   }, [])
 }

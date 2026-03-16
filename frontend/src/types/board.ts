@@ -27,15 +27,14 @@ export interface BoardCardProps {
   onOpen: (publicId: string) => void
 }
 
-
 export type Tool =
+  | "select"
   | "rectangle"
   | "circle"
   | "sticky"
   | "triangle"
   | "diamond"
-  | "select"
-
+  | "text"
 
 export interface ControlProps {
   onBoardAdded: (board: Board) => void
@@ -47,7 +46,6 @@ export interface BoardMenuProps {
   onDelete: (publicId: string) => void
   onLeave: (publicId: string) => void
 }
-
 
 export type BoardCanvasType = {
   viewport: Viewport
@@ -61,12 +59,13 @@ export type BoardCanvasProps = {
   tool: Tool
   setTool: React.Dispatch<React.SetStateAction<Tool>>
   onMove: (id: string, x: number, y: number) => void
-  onCreate: (type: any, x: number, y: number) => void
+  onCreate: (type: string, x: number, y: number) => Promise<string | null>
   onDelete: (id: string) => void
   onManyDelete: (ids: string[]) => void
   onResize: (id: string, width: number, height: number, x: number, y: number) => void
   onManyMove: (moves: { id: string; x: number; y: number }[]) => void
   onSelectionChange?: (ids: string[]) => void
+  onTextChange: (id: string, text: string) => void
 }
 
 export type BoardObject = {
@@ -79,7 +78,6 @@ export type BoardObject = {
   rotation?: number
   z_index?: number
   data: Record<string, any>
-
 }
 
 export type BoardInteraction = {
@@ -91,6 +89,7 @@ export type BoardInteraction = {
   selectionOutline: any
   isMarqueeActive: boolean
   isGroupDrag: boolean
+  isEditing: boolean
 }
 
 export type SelectionOverrides = Map<string, { x: number; y: number; width: number; height: number }>
@@ -110,12 +109,10 @@ export type ActiveResize = {
   handle: ResizeHandle
   startX: number
   startY: number
-  // Bounding box of the whole selection at drag start
   groupX: number
   groupY: number
   groupWidth: number
   groupHeight: number
-  // Per-object snapshot keyed by id
   objectSnapshots: Map<string, ObjectSnapshot>
 }
 
@@ -127,6 +124,8 @@ export type UseShapeRendererProps = {
   objectsRef: React.RefObject<BoardObject[]>
   objectMapRef: React.RefObject<Map<string, BoardObject>>
   drawSelectionRef: React.RefObject<DrawSelectionFn>
+  toolRef: React.RefObject<Tool>
+  onTextOpen: (id: string) => void
 }
 
 export type UseSelectionProps = {
@@ -136,7 +135,7 @@ export type UseSelectionProps = {
   objectsRef: React.RefObject<BoardObject[]>
   objectMapRef: React.RefObject<Map<string, BoardObject>>
   interactionRef: React.RefObject<BoardInteraction>
-   onSelectionChange?: (ids: string[]) => void
+  onSelectionChange?: (ids: string[]) => void
 }
 
 export type UseMarqueeProps = {
@@ -144,37 +143,44 @@ export type UseMarqueeProps = {
   overlayLayerRef: React.RefObject<any>
   interactionRef: React.RefObject<BoardInteraction>
   objectsRef: React.RefObject<BoardObject[]>
-  
   drawSelectionRef: React.RefObject<DrawSelectionFn>
-
 }
 
 export type UseDragProps = {
-  viewportRef: React.RefObject<any>;
+  viewportRef: React.RefObject<any>
   interactionRef: React.RefObject<BoardInteraction>
-  objectsRef: React.RefObject<BoardObject[]>;
+  objectsRef: React.RefObject<BoardObject[]>
   objectMapRef: React.RefObject<Map<string, BoardObject>>
-  onMove: (id: string, x: number, y: number) => void;
-  onManyMove: (moves: { id: string; x: number; y: number }[]) => void;
-  drawSelectionRef: React.RefObject<DrawSelectionFn>;
- 
-};
+  onMove: (id: string, x: number, y: number) => void
+  onManyMove: (moves: { id: string; x: number; y: number }[]) => void
+  drawSelectionRef: React.RefObject<DrawSelectionFn>
+}
 
 export type UseCreateProps = {
   viewportRef: React.RefObject<any>
   tool: string
-  onCreate: (type: string, x: number, y: number) => void
+  onCreate: (type: string, x: number, y: number) => Promise<string | null>
   onToolChange?: (tool: Tool) => void
+  onTextCreate?: (x: number, y: number) => void
+  interactionRef: React.RefObject<BoardInteraction>
+
 }
 
 export type UseDeleteProps = {
-  
   interactionRef: React.RefObject<BoardInteraction>
-  onDelete: (id: string) => void;
-  onManyDelete: (ids: string[]) => void;
-};
+  onDelete: (id: string) => void
+  onManyDelete: (ids: string[]) => void
+}
+
+export type UseTextEditProps = {
+  viewportRef: React.RefObject<any>
+  interactionRef: React.RefObject<BoardInteraction>
+  objectMapRef: React.RefObject<Map<string, BoardObject>>
+  onTextChange: (id: string, text: string) => void
+  onToolChange: (tool: Tool) => void
+}
 
 export type ObjectSnapshot = {
-  obj: BoardObject,
+  obj: BoardObject
   graphics: Graphics
 }

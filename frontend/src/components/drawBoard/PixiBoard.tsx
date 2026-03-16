@@ -1,5 +1,5 @@
 import { Application } from "@pixi/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import BoardCanvas from "./BoardCanvas";
 import useBoardSocket from "../../lib/useBoardSocket";
 import type { BoardObject, Tool } from "../../types/board";
@@ -17,6 +17,10 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   const [color, setColor] = useState("#ff0000");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  // keep a ref of objects so callbacks always have latest data without stale closure
+  const objectsRef = useRef<BoardObject[]>([]);
+  objectsRef.current = objects;
+
   useEffect(() => {
     getBoardObjects(boardId).then(setObjects);
   }, [boardId]);
@@ -29,17 +33,31 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     sendCreate,
     sendResize,
     sendColorUpdate,
+    sendTextUpdate,
   } = useBoardSocket({ boardId, setObjects });
 
-  const createNewObject = async (type: string, x: number, y: number) => {
+  const createNewObject = async (
+    type: string,
+    x: number,
+    y: number,
+  ): Promise<string | null> => {
     const fill = color.replace("#", "0x");
-    const newObject = { type, x, y, width: 200, height: 120, data: { fill } };
+    const newObject = {
+      type,
+      x,
+      y,
+      width: type === "text" ? 200 : 200,
+      height: type === "text" ? 80 : 120,
+      data: { fill, text: "" },
+    };
     try {
       const created = await createObject(boardId, newObject);
       setObjects((prev) => [...prev, created]);
       sendCreate(created);
+      return created.id;
     } catch (err) {
       console.error("Create failed", err);
+      return null;
     }
   };
 
@@ -124,10 +142,31 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     try {
       sendColorUpdate(ids, fill);
       await Promise.all(
-        ids.map((id) => updateObject(boardId, id, { data: { fill } })),
+        ids.map((id) => {
+          // merge with existing data so text isn't wiped
+          const existing =
+            objectsRef.current.find((o) => o.id === id)?.data ?? {};
+          return updateObject(boardId, id, { data: { ...existing, fill } });
+        }),
       );
     } catch (err) {
       console.error("Color update failed", err);
+    }
+  };
+
+  const updateText = async (id: string, text: string) => {
+    setObjects((prev) =>
+      prev.map((obj) =>
+        obj.id === id ? { ...obj, data: { ...obj.data, text } } : obj,
+      ),
+    );
+    try {
+      sendTextUpdate(id, text);
+      // merge with existing data so fill isn't wiped
+      const existing = objectsRef.current.find((o) => o.id === id)?.data ?? {};
+      await updateObject(boardId, id, { data: { ...existing, text } });
+    } catch (err) {
+      console.error("Text update failed", err);
     }
   };
 
@@ -162,6 +201,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
           onResize={resizeObject}
           onManyMove={moveManyObjects}
           onSelectionChange={setSelectedIds}
+          onTextChange={updateText}
         />
       </Application>
     </>
