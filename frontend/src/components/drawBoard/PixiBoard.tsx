@@ -64,6 +64,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     handleItalic,
     handleFontSize,
     handleAlign,
+    handleFontFamily,
   } = useBoardToolbar({
     boardId,
     selectedIds,
@@ -100,6 +101,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         onItalic={handleItalic}
         onFontSize={handleFontSize}
         onAlign={handleAlign}
+        onFontFamily={handleFontFamily}
       />
 
       <Application resizeTo={window} background={0xffffff} antialias resolution={window.devicePixelRatio} autoDensity>

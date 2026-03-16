@@ -11,14 +11,31 @@ type Props = {
   onSendBack: () => void
   onBringToFront: () => void
   onSendToBack: () => void
-  // text styling
   onBold: () => void
   onItalic: () => void
   onFontSize: (size: number) => void
   onAlign: (align: "left" | "center" | "right") => void
+  onFontFamily: (font: string) => void
 }
 
 const FONT_SIZES = [12, 14, 16, 18, 24, 32, 48]
+
+const FONTS = [
+  { label: "Sans Serif", value: "sans-serif" },
+  { label: "Serif", value: "serif" },
+  { label: "Monospace", value: "monospace" },
+  { label: "Cursive", value: "cursive" },
+  { label: "Arial", value: "Arial, sans-serif" },
+  { label: "Georgia", value: "Georgia, serif" },
+  { label: "Times New Roman", value: "Times New Roman, serif" },
+  { label: "Courier New", value: "Courier New, monospace" },
+  { label: "Trebuchet MS", value: "Trebuchet MS, sans-serif" },
+  { label: "Verdana", value: "Verdana, sans-serif" },
+  { label: "Impact", value: "Impact, sans-serif" },
+  { label: "Comic Sans MS", value: "Comic Sans MS, cursive" },
+  { label: "Palatino", value: "Palatino, serif" },
+  { label: "Garamond", value: "Garamond, serif" },
+]
 
 export default function FloatingToolbar({
   toolbar,
@@ -33,15 +50,16 @@ export default function FloatingToolbar({
   onItalic,
   onFontSize,
   onAlign,
+  onFontFamily,
 }: Props) {
   if (!toolbar.visible) return null
 
-  const allText = toolbar.types.every(t => t === "text")
-  const hasText = toolbar.types.some(t => t === "text")
-  const mixed = toolbar.ids.length > 1
+  const hasText = toolbar.types.some(t => t === "text") ||
+    toolbar.ids.some(id => objects.find(o => o.id === id)?.data?.text)
 
-  // get text style from first selected text object
-  const firstTextObj = objects.find(o => toolbar.ids.includes(o.id) && o.type === "text")
+  const firstTextObj = objects.find(o =>
+    toolbar.ids.includes(o.id) && (o.type === "text" || o.data?.text)
+  )
   const textStyle = firstTextObj?.data ?? {}
 
   return (
@@ -65,72 +83,95 @@ export default function FloatingToolbar({
       }}
       onPointerDown={e => e.stopPropagation()}
     >
-      {/* Always visible actions */}
+      {/* Object actions */}
       <ToolbarButton onClick={onDuplicate} title="Duplicate">⧉</ToolbarButton>
       <ToolbarButton onClick={onBringToFront} title="Bring to front">⇑</ToolbarButton>
       <ToolbarButton onClick={onBringForward} title="Bring forward">↑</ToolbarButton>
       <ToolbarButton onClick={onSendBack} title="Send back">↓</ToolbarButton>
       <ToolbarButton onClick={onSendToBack} title="Send to back">⇓</ToolbarButton>
-      <Divider />
 
-      {/* Text styling — shown when any text object is selected */}
+      {/* Text styling */}
       {hasText && (
         <>
-          <ToolbarButton
-            onClick={onBold}
-            title="Bold"
-            active={textStyle.bold}
-            style={{ fontWeight: "bold" }}
-          >
-            B
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={onItalic}
-            title="Italic"
-            active={textStyle.italic}
-            style={{ fontStyle: "italic" }}
-          >
-            I
-          </ToolbarButton>
           <Divider />
-          <ToolbarButton onClick={() => onAlign("left")} title="Align left" active={textStyle.align === "left"}>≡</ToolbarButton>
-          <ToolbarButton onClick={() => onAlign("center")} title="Align center" active={!textStyle.align || textStyle.align === "center"}>≡</ToolbarButton>
-          <ToolbarButton onClick={() => onAlign("right")} title="Align right" active={textStyle.align === "right"}>≡</ToolbarButton>
-          <Divider />
+
+          {/* Font family */}
+          <select
+            value={textStyle.fontFamily ?? "sans-serif"}
+            onChange={e => onFontFamily(e.target.value)}
+            style={selectStyle}
+            onPointerDown={e => e.stopPropagation()}
+          >
+            {FONTS.map(f => (
+              <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Font size */}
           <select
             value={textStyle.fontSize ?? 16}
             onChange={e => onFontSize(Number(e.target.value))}
-            style={{
-              fontSize: "12px",
-              border: "1px solid #e2e8f0",
-              borderRadius: "4px",
-              padding: "2px 4px",
-              cursor: "pointer",
-              outline: "none",
-            }}
+            style={selectStyle}
             onPointerDown={e => e.stopPropagation()}
           >
             {FONT_SIZES.map(s => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
+
           <Divider />
+
+          <ToolbarButton onClick={onBold} title="Bold" active={textStyle.bold} style={{ fontWeight: "bold" }}>B</ToolbarButton>
+          <ToolbarButton onClick={onItalic} title="Italic" active={textStyle.italic} style={{ fontStyle: "italic" }}>I</ToolbarButton>
+
+          <Divider />
+
+          <ToolbarButton onClick={() => onAlign("left")} title="Align left" active={textStyle.align === "left"}>
+            <AlignIcon align="left" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => onAlign("center")} title="Align center" active={!textStyle.align || textStyle.align === "center"}>
+            <AlignIcon align="center" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => onAlign("right")} title="Align right" active={textStyle.align === "right"}>
+            <AlignIcon align="right" />
+          </ToolbarButton>
         </>
       )}
 
-      {/* Delete — always last */}
+      <Divider />
       <ToolbarButton onClick={onDelete} title="Delete" danger>🗑</ToolbarButton>
     </div>
   )
 }
 
+const selectStyle: React.CSSProperties = {
+  fontSize: "12px",
+  border: "1px solid #e2e8f0",
+  borderRadius: "4px",
+  padding: "2px 4px",
+  cursor: "pointer",
+  outline: "none",
+  background: "white",
+  color: "#374151",
+  maxWidth: "120px",
+}
+
+function AlignIcon({ align }: { align: "left" | "center" | "right" }) {
+  const lines = [14, 10, 12]
+  return (
+    <svg width="14" height="12" viewBox="0 0 14 12">
+      {lines.map((w, i) => {
+        const x = align === "left" ? 0 : align === "right" ? 14 - w : (14 - w) / 2
+        return <rect key={i} x={x} y={i * 4} width={w} height={2} rx={1} fill="currentColor" />
+      })}
+    </svg>
+  )
+}
+
 function ToolbarButton({
-  onClick,
-  title,
-  children,
-  active,
-  danger,
-  style,
+  onClick, title, children, active, danger, style,
 }: {
   onClick: () => void
   title: string
@@ -158,12 +199,8 @@ function ToolbarButton({
         transition: "background 0.1s",
         ...style,
       }}
-      onMouseEnter={e => {
-        if (!active) (e.target as HTMLElement).style.background = danger ? "#fee2e2" : "#f1f5f9"
-      }}
-      onMouseLeave={e => {
-        (e.target as HTMLElement).style.background = active ? "#dbeafe" : "transparent"
-      }}
+      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = danger ? "#fee2e2" : "#f1f5f9" }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = active ? "#dbeafe" : "transparent" }}
     >
       {children}
     </button>

@@ -55,7 +55,7 @@ export function useTextEdit({
       top: `${screenPos.y}px`,
       width: `${(obj.width ?? 200) * scale}px`,
       height: `${(obj.height ?? 120) * scale}px`,
-      fontSize: `${16 * scale}px`,
+      fontSize: `16px`,
       lineHeight: "1.5",
       padding: "8px",
       border: "2px solid #3b82f6",

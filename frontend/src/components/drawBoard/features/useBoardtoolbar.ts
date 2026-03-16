@@ -178,6 +178,7 @@ export function useBoardToolbar({
 
   const handleFontSize = (size: number) => updateTextStyle(selectedIds, { fontSize: size });
   const handleAlign = (align: "left" | "center" | "right") => updateTextStyle(selectedIds, { align });
+  const handleFontFamily = (fontFamily: string) => updateTextStyle(selectedIds, { fontFamily });
 
   return {
     handleDelete,
@@ -190,5 +191,6 @@ export function useBoardToolbar({
     handleItalic,
     handleFontSize,
     handleAlign,
+    handleFontFamily,
   };
 }

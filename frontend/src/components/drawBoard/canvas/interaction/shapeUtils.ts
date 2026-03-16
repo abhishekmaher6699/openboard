@@ -1,7 +1,7 @@
 import { Graphics, Text, TextStyle, Container } from "pixi.js";
 import type { BoardObject } from "../../../../types/board";
 
-const TEXT_STYLE = new TextStyle({
+const BASE_TEXT_STYLE = new TextStyle({
   fontSize: 16,
   fill: 0x1a1a1a,
   wordWrap: true,
@@ -15,6 +15,13 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
   const height = obj.height ?? 120;
   const fill = Number(obj.data?.fill ?? "0xff0000");
   const text = obj.data?.text ?? "";
+
+  // read text style properties from data
+  const fontSize = obj.data?.fontSize ?? 16
+  const bold = obj.data?.bold ?? false
+  const italic = obj.data?.italic ?? false
+  const align = obj.data?.align ?? "center"
+  const fontFamily = obj.data?.fontFamily ?? "sans-serif"
 
   let g = container.getChildByName("shape") as Graphics
   if (!g) {
@@ -47,15 +54,28 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
 
   let t = container.getChildByName("label") as Text
   if (!t) {
-    t = new Text({ text: "", style: TEXT_STYLE.clone() })
+    t = new Text({ text: "", style: BASE_TEXT_STYLE.clone() })
     t.name = "label"
     container.addChild(t)
   }
 
+  // apply all text style properties from data
+  t.style.fontSize = fontSize
+  t.style.fontWeight = bold ? "bold" : "normal"
+  t.style.fontStyle = italic ? "italic" : "normal"
+  t.style.align = align
+  t.style.fontFamily = fontFamily
+  t.style.wordWrap = true
   t.style.wordWrapWidth = width - 24
+  t.style.breakWords = true
+  t.style.fill = obj.type === "text" ? 0x1a1a1a : 0x1a1a1a
+
   t.text = text
-  t.anchor.set(0.5, 0.5)
-  t.x = width / 2
+  t.anchor.set(
+    align === "left" ? 0 : align === "right" ? 1 : 0.5,
+    0.5
+  )
+  t.x = align === "left" ? 12 : align === "right" ? width - 12 : width / 2
   t.y = height / 2
   t.visible = text.length > 0
 }
