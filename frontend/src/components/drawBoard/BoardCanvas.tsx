@@ -31,6 +31,7 @@ export default function BoardCanvas({
   onManyMove,
   onSelectionChange,
   onTextChange,
+  onResizeMany
 }: BoardCanvasProps) {
   const { app } = useApplication();
 
@@ -58,6 +59,7 @@ export default function BoardCanvas({
     objectMapRef,
     onResize,
     drawSelectionRef,
+    onResizeMany
   });
 
   const { drawSelection } = useSelection({

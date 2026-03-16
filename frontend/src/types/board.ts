@@ -66,6 +66,7 @@ export type BoardCanvasProps = {
   onManyMove: (moves: { id: string; x: number; y: number }[]) => void
   onSelectionChange?: (ids: string[]) => void
   onTextChange: (id: string, text: string) => void
+  onResizeMany: (resizes: { id: string; width: number; height: number; x: number; y: number }[]) => void
 }
 
 export type BoardObject = {
@@ -100,6 +101,7 @@ export type UseResizeProps = {
   interactionRef: React.RefObject<BoardInteraction>
   objectMapRef: React.RefObject<Map<string, BoardObject>>
   onResize: (id: string, w: number, h: number, x: number, y: number) => void
+  onResizeMany: (resizes: { id: string; width: number; height: number; x: number; y: number }[]) => void
   drawSelectionRef: React.RefObject<DrawSelectionFn>
 }
 

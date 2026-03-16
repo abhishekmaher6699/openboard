@@ -26,6 +26,7 @@ export function useResize({
   interactionRef,
   objectMapRef,
   onResize,
+  onResizeMany,
   drawSelectionRef,
 }: UseResizeProps) {
 
@@ -63,8 +64,8 @@ export function useResize({
           if (!obj || !g) return
 
           objectSnapshots.set(id, {
-            obj: {...obj},
-            graphics: g
+            obj: { ...obj },
+            graphics: g,
           })
         })
 
@@ -93,7 +94,6 @@ export function useResize({
       container.addChild(h)
     })
   }
-
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -148,15 +148,10 @@ export function useResize({
         const newH = Math.max(MIN_SIZE, obj.height * scaleY)
 
         if (graphics) {
+          // just reposition and scale the container — no redraw, no text layout
           graphics.x = newX
           graphics.y = newY
-          drawShapeFromObj(graphics, {
-            ...obj,
-            x: newX,
-            y: newY,
-            width: newW,
-            height: newH
-          })
+          graphics.scale.set(newW / obj.width, newH / obj.height)
         }
 
         overrides.set(id, { x: newX, y: newY, width: newW, height: newH })
@@ -172,13 +167,36 @@ export function useResize({
       const pos = viewport.toWorld(e.global)
       const { newGX, newGY, scaleX, scaleY } = computeScale(r, pos)
 
-      r.objectSnapshots.forEach(({ obj }, id) => {
+      const resizes: { id: string; width: number; height: number; x: number; y: number }[] = []
+
+      r.objectSnapshots.forEach(({ obj, graphics }, id) => {
         const newX = newGX + (obj.x - r.groupX) * scaleX
         const newY = newGY + (obj.y - r.groupY) * scaleY
         const newW = Math.max(MIN_SIZE, obj.width * scaleX)
         const newH = Math.max(MIN_SIZE, obj.height * scaleY)
-        onResize(id, newW, newH, newX, newY)
+
+        // reset scale and do a proper redraw at final size
+        if (graphics) {
+          graphics.scale.set(1, 1)
+          drawShapeFromObj(graphics, {
+            ...obj,
+            x: newX,
+            y: newY,
+            width: newW,
+            height: newH,
+          })
+        }
+
+        resizes.push({ id, width: newW, height: newH, x: newX, y: newY })
       })
+
+      // single object uses existing onResize, multiple uses batch
+      if (resizes.length === 1) {
+        const r = resizes[0]
+        onResize(r.id, r.width, r.height, r.x, r.y)
+      } else if (resizes.length > 1) {
+        onResizeMany(resizes)
+      }
 
       activeResizeRef.current = null
       viewport.plugins.resume("drag")

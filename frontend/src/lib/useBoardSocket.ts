@@ -66,6 +66,17 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
         setObjects((prev) => [...prev, data.object]);
       }
 
+      if (data.type === "resize_many") {
+        setObjects((prev) =>
+          prev.map((obj) => {
+            const r = data.resizes.find((r: any) => r.id === obj.id);
+            return r
+              ? { ...obj, x: r.x, y: r.y, width: r.width, height: r.height }
+              : obj;
+          }),
+        );
+      }
+
       if (data.type === "update_text") {
         setObjects((prev) =>
           prev.map((obj) =>
@@ -148,6 +159,20 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     socket.send(JSON.stringify({ type: "update_color", ids, fill }));
   };
 
+  const sendResizeMany = (
+    resizes: {
+      id: string;
+      width: number;
+      height: number;
+      x: number;
+      y: number;
+    }[],
+  ) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({ type: "resize_many", resizes }));
+  };
+
   const sendTextUpdate = (id: string, text: string) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
@@ -161,6 +186,7 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
     sendManyDelete,
     sendCreate,
     sendResize,
+    sendResizeMany,
     sendColorUpdate,
     sendTextUpdate,
   };
