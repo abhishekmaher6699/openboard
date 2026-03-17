@@ -13,12 +13,17 @@ export function useShapeRenderer({
   drawSelectionRef,
   toolRef,
   onTextOpen,
+  disabled
 }: UseShapeRendererProps) {
 
   const interaction = interactionRef.current
 
   // track last rendered version of each object to skip unnecessary redraws
   const renderedRef = useRef<Map<string, string>>(new Map())
+
+    const disabledRef = useRef(disabled)
+  disabledRef.current = disabled
+
 
   useEffect(() => {
     objectsRef.current = objects
@@ -57,7 +62,7 @@ export function useShapeRenderer({
         let lastUpTime = 0
 
         container.on("pointerup", (e: any) => {
-          if (interaction.isEditing) return
+          if (interaction.isEditing || disabledRef.current) return
 
           const now = Date.now()
           if (now - lastUpTime < 300) {
@@ -81,7 +86,7 @@ export function useShapeRenderer({
 
         container.on("pointerdown", (e: any) => {
           e.stopPropagation()
-          if (interaction.isEditing) return
+          if (interaction.isEditing || disabledRef.current) return
 
           const currentObj = objectMapRef.current.get(obj.id)
           if (!currentObj) return

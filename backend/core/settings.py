@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "channels",
     "api",
+    "activity",
     "accounts",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",

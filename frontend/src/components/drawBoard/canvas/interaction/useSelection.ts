@@ -14,6 +14,7 @@ export function useSelection({
   attachHandles,
   onSelectionChange,
   onToolbarUpdate,
+  disabled
 }: UseSelectionProps) {
 
   const drawSelection: DrawSelectionFn = (
@@ -122,6 +123,9 @@ export function useSelection({
   };
 
   useEffect(() => {
+
+    if (disabled) return 
+    
     const viewport = viewportRef.current;
     if (!viewport) return;
 

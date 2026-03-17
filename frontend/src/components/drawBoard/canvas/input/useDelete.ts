@@ -6,11 +6,14 @@ export function useDelete({
   interactionRef,
   onDelete,
   onManyDelete,
+  disabled
 }: UseDeleteProps) {
 
   const interaction = interactionRef.current
   
   useEffect(() => {
+
+    if (disabled) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Delete" && e.key !== "Backspace") return;
       if (interaction.selected.size === 0) return;

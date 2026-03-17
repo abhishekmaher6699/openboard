@@ -34,7 +34,10 @@ export function useResize({
   onResize,
   onResizeMany,
   drawSelectionRef,
+  disabled
 }: UseResizeProps) {
+
+
 
   const activeResizeRef = useRef<ActiveResize | null>(null)
 
@@ -102,6 +105,9 @@ export function useResize({
   }
 
   useEffect(() => {
+
+      if (disabled) return
+      
     const viewport = viewportRef.current
     if (!viewport) return
 

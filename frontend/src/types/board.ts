@@ -71,6 +71,7 @@ export type BoardCanvasProps = {
   viewportRef?: React.RefObject<any>
   objectMapRef?: React.RefObject<Map<string, BoardObject>>
   clearSelectionRef?: React.RefObject<() => void>
+  previewMode?: boolean
 }
 
 export type BoardObject = {
@@ -107,6 +108,7 @@ export type UseResizeProps = {
   onResize: (id: string, w: number, h: number, x: number, y: number) => void
   onResizeMany: (resizes: { id: string; width: number; height: number; x: number; y: number }[]) => void
   drawSelectionRef: React.RefObject<DrawSelectionFn>
+    disabled: boolean | undefined
 }
 
 export type ResizeHandle = "nw" | "ne" | "se" | "sw"
@@ -132,6 +134,7 @@ export type UseShapeRendererProps = {
   drawSelectionRef: React.RefObject<DrawSelectionFn>
   toolRef: React.RefObject<Tool>
   onTextOpen: (id: string) => void
+  disabled: boolean | undefined
 }
 
 export type UseSelectionProps = {
@@ -144,6 +147,8 @@ export type UseSelectionProps = {
   onSelectionChange?: (ids: string[]) => void
   onToolbarUpdate?: (ids: Set<string>, overrides?: SelectionOverrides) => void
   clearSelectionRef?: React.RefObject<() => void>
+  previewMode?: boolean
+  disabled: boolean | undefined
 }
 
 export type UseMarqueeProps = {
@@ -152,6 +157,7 @@ export type UseMarqueeProps = {
   interactionRef: React.RefObject<BoardInteraction>
   objectsRef: React.RefObject<BoardObject[]>
   drawSelectionRef: React.RefObject<DrawSelectionFn>
+    disabled: boolean | undefined
 }
 
 export type UseDragProps = {
@@ -162,21 +168,25 @@ export type UseDragProps = {
   onMove: (id: string, x: number, y: number) => void
   onManyMove: (moves: { id: string; x: number; y: number }[]) => void
   drawSelectionRef: React.RefObject<DrawSelectionFn>
+  disabled: boolean | undefined
+
 }
 
 export type UseCreateProps = {
   viewportRef: React.RefObject<any>
-   interactionRef: React.RefObject<BoardInteraction>
   tool: string
+  interactionRef: React.RefObject<BoardInteraction>
   onCreate: (type: string, x: number, y: number) => Promise<string | null>
   onToolChange?: (tool: Tool) => void
   onTextCreate?: (x: number, y: number) => void
+    disabled: boolean | undefined
 }
 
 export type UseDeleteProps = {
   interactionRef: React.RefObject<BoardInteraction>
   onDelete: (id: string) => void
   onManyDelete: (ids: string[]) => void
+  disabled: boolean | undefined
 }
 
 export type UseTextEditProps = {
@@ -190,4 +200,13 @@ export type UseTextEditProps = {
 export type ObjectSnapshot = {
   obj: BoardObject
   graphics: Graphics
+}
+
+export type BoardActivity = {
+  id: string
+  user: { id: number; username: string } | null
+  action_type: string
+  payload: Record<string, any>
+  snapshot: BoardObject[]
+  created_at: string
 }

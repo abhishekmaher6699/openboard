@@ -7,6 +7,7 @@ type UseTextEditProps = {
   objectMapRef: React.RefObject<Map<string, BoardObject>>
   onTextChange: (id: string, text: string) => void
   onToolChange: (tool: any) => void
+  disabled: boolean | undefined
 }
 
 export function useTextEdit({
@@ -15,12 +16,16 @@ export function useTextEdit({
   objectMapRef,
   onTextChange,
   onToolChange,
+  disabled
 }: UseTextEditProps) {
+
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const editingIdRef = useRef<string | null>(null)
 
   function openEditor(id: string) {
+    if (disabled) return 
+
     const viewport = viewportRef.current
     if (!viewport) return
 
@@ -101,6 +106,9 @@ export function useTextEdit({
   }
 
   function closeEditor(switchToSelect = true) {
+
+    if (disabled) return 
+
     const viewport = viewportRef.current
     const interaction = interactionRef.current
 

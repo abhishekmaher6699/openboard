@@ -5,4 +5,5 @@ urlpatterns = [
     path("auth/", include("accounts.urls")),
     path("", include("boards.urls")),
     path("", include("board_objects.urls")),
+    path("", include("activity.urls")),  # ← add
 ]

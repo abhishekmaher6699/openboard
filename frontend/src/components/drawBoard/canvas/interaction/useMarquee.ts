@@ -9,7 +9,8 @@ export function useMarquee({
   overlayLayerRef,
   objectsRef,
   drawSelectionRef,
-  interactionRef
+  interactionRef,
+  disabled
 }: UseMarqueeProps) {
 
   const interaction = interactionRef.current
@@ -20,6 +21,9 @@ export function useMarquee({
   const isPanRef = useRef(false)
 
   useEffect(() => {
+
+    if (disabled) return 
+
     const viewport = viewportRef.current
     const overlay = overlayLayerRef.current
     if (!viewport || !overlay) return

@@ -10,6 +10,7 @@ export function useCreate({
   onToolChange,
   onTextCreate,
   interactionRef,
+  disabled
 }: UseCreateProps) {
 
   const toolRef = useRef(tool)
@@ -21,7 +22,13 @@ export function useCreate({
   const onTextCreateRef = useRef(onTextCreate)
   onTextCreateRef.current = onTextCreate
 
+  const disabledRef = useRef(disabled)
+  disabledRef.current = disabled
+
   useEffect(() => {
+
+    if (disabled) return 
+
     const viewport = viewportRef.current
     if (!viewport) return
 
@@ -31,6 +38,7 @@ export function useCreate({
     const up = (e: any) => {
       // ignore if editor is open
       if (interaction?.isEditing) return
+      if (disabledRef.current) return 
 
       if (e.target !== viewport) return
 
@@ -50,6 +58,7 @@ export function useCreate({
     const down = (e: any) => {
       // ignore if editor is open
       if (interaction?.isEditing) return
+      if (disabledRef.current) return 
 
       const currentTool = toolRef.current
 

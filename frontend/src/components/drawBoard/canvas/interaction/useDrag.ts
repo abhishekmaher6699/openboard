@@ -1,9 +1,5 @@
 import { useEffect } from "react";
-import type {
-  SelectionOverrides,
-  UseDragProps
-} from "../../../../types/board";
-
+import type { SelectionOverrides, UseDragProps } from "../../../../types/board";
 
 export function useDrag({
   viewportRef,
@@ -12,17 +8,18 @@ export function useDrag({
   onMove,
   onManyMove,
   drawSelectionRef,
+  disabled
 }: UseDragProps) {
-
-  const interaction = interactionRef.current
-
+  const interaction = interactionRef.current;
 
   useEffect(() => {
+
+    if (disabled) return 
     const viewport = viewportRef.current;
     if (!viewport) return;
 
     const move = (e: any) => {
-      const drag = interaction.activeDrag
+      const drag = interaction.activeDrag;
       if (!drag) return;
 
       const pos = viewport.toWorld(e.global);
@@ -44,7 +41,7 @@ export function useDrag({
       const overrides: SelectionOverrides = new Map();
       interaction.selected.forEach((id: string) => {
         const g = interaction.graphicsMap.get(id);
-        const obj = objectMapRef.current.get(id)
+        const obj = objectMapRef.current.get(id);
         if (!g || !obj) return;
         overrides.set(id, {
           x: g.x,
@@ -64,13 +61,23 @@ export function useDrag({
       if (interaction.selected.size === 1) {
         const id = [...interaction.selected][0];
         const g = interaction.graphicsMap.get(id);
-        if (g) onMove(id, g.x, g.y);
+        const obj = objectMapRef.current.get(id);
+        if (
+          g &&
+          obj &&
+          (Math.abs(g.x - obj.x) > 1 || Math.abs(g.y - obj.y) > 1)
+        ) {
+          onMove(id, g.x, g.y);
+        }
       } else {
         const moves: { id: string; x: number; y: number }[] = [];
         interaction.selected.forEach((id: string) => {
           const g = interaction.graphicsMap.get(id);
-          if (!g) return;
-          moves.push({ id, x: g.x, y: g.y });
+          const obj = objectMapRef.current.get(id);
+          if (!g || !obj) return;
+          if (Math.abs(g.x - obj.x) > 1 || Math.abs(g.y - obj.y) > 1) {
+            moves.push({ id, x: g.x, y: g.y });
+          }
         });
         if (moves.length > 0) onManyMove(moves);
       }

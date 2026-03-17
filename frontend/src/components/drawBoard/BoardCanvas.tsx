@@ -1,5 +1,5 @@
 import { useApplication } from "@pixi/react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { useViewport } from "./canvas/useViewport";
 import { useShapeRenderer } from "./canvas/rendering/useShapeRenderer";
@@ -36,6 +36,7 @@ export default function BoardCanvas({
   viewportRef: externalViewportRef,
   objectMapRef: externalObjectMapRef,
   clearSelectionRef,
+  previewMode,
 }: BoardCanvasProps) {
   const { app } = useApplication();
 
@@ -44,6 +45,11 @@ export default function BoardCanvas({
   const objectsRef = useRef<any[]>([]);
   const objectMapRef = externalObjectMapRef ?? useRef<Map<string, BoardObject>>(new Map());
   const drawSelectionRef = useRef<DrawSelectionFn>(() => {});
+
+
+  useEffect(() => {
+    objectMapRef.current = new Map(objects.map(o => [o.id, o]))
+  }, [objects])
 
   const toolRef = useRef<Tool>(tool);
   toolRef.current = tool;
@@ -54,6 +60,7 @@ export default function BoardCanvas({
     objectMapRef,
     onTextChange,
     onToolChange: setTool,
+    disabled: previewMode
   });
 
   const { attachHandles } = useResize({
@@ -63,6 +70,7 @@ export default function BoardCanvas({
     onResize,
     drawSelectionRef,
     onResizeMany,
+    disabled: previewMode
   });
 
   const { drawSelection } = useSelection({
@@ -74,6 +82,7 @@ export default function BoardCanvas({
     attachHandles,
     onSelectionChange,
     onToolbarUpdate,
+    disabled: previewMode
   });
 
   drawSelectionRef.current = drawSelection;
@@ -88,6 +97,7 @@ export default function BoardCanvas({
     }
   }
 
+  // disable all interactions in preview mode — pan/zoom still works via viewport
   useDrag({
     viewportRef,
     interactionRef,
@@ -96,6 +106,7 @@ export default function BoardCanvas({
     onMove,
     onManyMove,
     drawSelectionRef,
+    disabled: previewMode
   });
 
   useShapeRenderer({
@@ -108,6 +119,7 @@ export default function BoardCanvas({
     drawSelectionRef,
     toolRef,
     onTextOpen: openEditor,
+    disabled: previewMode
   });
 
   useMarquee({
@@ -116,9 +128,10 @@ export default function BoardCanvas({
     interactionRef,
     objectsRef,
     drawSelectionRef,
+    disabled: previewMode
   });
 
-  useCreate({
+ useCreate({
     viewportRef,
     tool,
     onCreate,
@@ -136,12 +149,14 @@ export default function BoardCanvas({
       };
       waitForObj();
     },
+    disabled: previewMode
   });
 
   useDelete({
     interactionRef,
     onDelete,
     onManyDelete,
+    disabled: previewMode
   });
 
   return null;
