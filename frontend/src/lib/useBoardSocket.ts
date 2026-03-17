@@ -10,7 +10,8 @@ export default function useBoardSocket({ boardId, setObjects }: Props) {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const socket = new WebSocket(`ws://localhost:8000/ws/board/${boardId}/`);
+    const socket = new WebSocket(`ws://10.131.90.170:8000/ws/board/${boardId}/`);
+    // const socket = new WebSocket(`ws://localhost:8000/ws/board/${boardId}/`);
     socketRef.current = socket;
 
     socket.onopen = () => console.log("WS connected");

@@ -1,5 +1,5 @@
-const API_URL = "http://localhost:8000/api";
-// const API_URL = "http://192.168.1.74:8000/api";
+const API_URL = "http://10.131.90.170:8000/api";
+// const API_URL = "http://localhost:8000/api";
 
 export async function apiRequest<T>(
   endpoint: string,
