@@ -7,16 +7,13 @@ import ActivityPanel from "./features/activity/ActivityPanel";
 import PreviewBanner from "./features/activity/Previewbanner";
 import { useFloatingToolbar } from "./canvas/interaction/useFloatingtoolbar";
 import { useBoardObjects } from "./features/useBoardObjects";
-import { useBoardToolbar } from "./features/useBoardToolbar";
+import { useBoardToolbar } from "./features/useBoardtoolbar";
 import { useBoardActivity } from "../../hooks/useBoardActivity";
 import { useActivityPreview } from "../../hooks/useActivityPreview";
+import { useUndoRedo } from "./canvas/interaction/useUndoRedo";
 import type { BoardObject, Tool } from "../../types/board";
 import { getBoardObjects } from "../../api/board_objects";
 import BoardControls from "./features/BoardControls";
-import { useUndoRedo } from "./canvas/interaction/useUndoRedo";
-
-
-
 
 export default function PixiBoard({ boardId }: { boardId: string }) {
   const [objects, setObjects] = useState<BoardObject[]>([]);
@@ -24,24 +21,36 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   const [color, setColor] = useState("#ff0000");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   const viewportRef = useRef<any>(null);
   const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
   const objectsRef = useRef<BoardObject[]>([]);
   const clearSelectionRef = useRef<() => void>(() => {});
 
-  // keep objectsRef in sync with objects state
+  // keep objectsRef in sync
   useEffect(() => {
     objectsRef.current = objects;
     objectMapRef.current = new Map(objects.map((o) => [o.id, o]));
   }, [objects]);
+
+  // get current user id for per-user cursor tracking
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setCurrentUserId(payload.user_id ?? null);
+    } catch {
+      setCurrentUserId(null);
+    }
+  }, []);
 
   const {
     toolbar,
     update: updateToolbar,
     hide: hideToolbar,
   } = useFloatingToolbar(viewportRef, objectMapRef);
-  const { activities, loading, addActivity } = useBoardActivity(boardId);
   const {
     isPreviewMode,
     previewObjects,
@@ -49,6 +58,17 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     enterPreview,
     exitPreview,
   } = useActivityPreview();
+
+  const {
+    activities,
+    loading,
+    ready,
+    addActivity,
+    onUndoApplied,
+    onRedoApplied,
+    onRestoreApplied,
+    currentActivityId,
+  } = useBoardActivity(boardId);
 
   useEffect(() => {
     getBoardObjects(boardId).then(setObjects);
@@ -58,19 +78,20 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     boardId,
     objectsRef,
     setObjects,
-    onActivity: addActivity,
+    onActivity: (activity, deletedIds) => addActivity(activity, deletedIds),
     onRestore: (snapshot) => {
       setObjects(snapshot);
       exitPreview();
+      onRestoreApplied();
+    },
+    onUndoApplied: (cursorSequence, userId) => {
+      onUndoApplied(cursorSequence, Number(userId), Number(currentUserId));
+    },
+    onRedoApplied: (cursorSequence, userId) => {
+      onRedoApplied(cursorSequence, Number(userId), Number(currentUserId));
     },
   });
 
-
-  useUndoRedo({
-    onUndo: socket.sendUndo,
-    onRedo: socket.sendRedo
-  })
-  
   const { sendRestoreSnapshot } = socket;
 
   const {
@@ -112,6 +133,19 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     sendUpdate: socket.sendUpdate,
   });
 
+  useUndoRedo({
+    onUndo: socket.sendUndo,
+    onRedo: socket.sendRedo,
+  });
+
+  // clear selection and toolbar when entering preview mode
+  useEffect(() => {
+    if (isPreviewMode) {
+      clearSelectionRef.current?.();
+      hideToolbar();
+    }
+  }, [isPreviewMode]);
+
   const handleColorChange = (newColor: string) => {
     setColor(newColor);
     if (selectedIds.length > 0) updateColor(selectedIds, newColor);
@@ -121,16 +155,10 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     sendRestoreSnapshot(snapshot);
     setObjects(snapshot);
     exitPreview();
+    onRestoreApplied();
   };
 
   const displayObjects = isPreviewMode ? previewObjects : objects;
-
-    useEffect(() => {
-      if (isPreviewMode) {
-        clearSelectionRef.current?.()
-        hideToolbar()
-      }
-    }, [isPreviewMode])
 
   return (
     <>
@@ -149,6 +177,8 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         setColor={handleColorChange}
         onToggleActivity={() => setActivityPanelOpen((o) => !o)}
         activityOpen={activityPanelOpen}
+        onUndo={socket.sendUndo}
+        onRedo={socket.sendRedo}
       />
 
       <FloatingToolbar
@@ -171,11 +201,13 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
       <ActivityPanel
         activities={activities}
         loading={loading}
+        ready={ready}
         isOpen={activityPanelOpen}
         onClose={() => setActivityPanelOpen(false)}
         onPreview={enterPreview}
         onRestore={handleRestore}
         activeSnapshot={isPreviewMode ? previewObjects : null}
+        currentActivityId={isPreviewMode ? null : currentActivityId}
         exitPreview={exitPreview}
       />
 

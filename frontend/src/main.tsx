@@ -8,7 +8,7 @@ import { ThemeProvider } from "./context/theme-context.tsx";
 import { Toaster } from "sonner";
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  // <StrictMode>
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
@@ -17,5 +17,5 @@ createRoot(document.getElementById("root")!).render(
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
-  </StrictMode>,
+  // </StrictMode>,
 );

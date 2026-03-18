@@ -1,16 +1,24 @@
-import React, { useState } from "react"
-import type { Tool } from "../../../types/board"
+import React, { useState } from "react";
+import type { Tool } from "../../../types/board";
 
 type Props = {
-  tool: Tool
-  setTool: React.Dispatch<React.SetStateAction<Tool>>
-  color: string
-  setColor: (color: string) => void
-  onToggleActivity: () => void
-  activityOpen: boolean
-}
-
-const presetColors = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#000000"]
+  tool: Tool;
+  setTool: React.Dispatch<React.SetStateAction<Tool>>;
+  color: string;
+  setColor: (color: string) => void;
+  onToggleActivity: () => void;
+  activityOpen: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+};
+const presetColors = [
+  "#ef4444",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#8b5cf6",
+  "#000000",
+];
 
 const tools: { id: Tool; label: string }[] = [
   { id: "select", label: "↖" },
@@ -20,10 +28,19 @@ const tools: { id: Tool; label: string }[] = [
   { id: "diamond", label: "◆" },
   { id: "sticky", label: "🗒" },
   { id: "text", label: "T" },
-]
+];
 
-export default function BoardControls({ tool, setTool, color, setColor, onToggleActivity, activityOpen }: Props) {
-  const [showColors, setShowColors] = useState(false)
+export default function BoardControls({
+  tool,
+  setTool,
+  color,
+  setColor,
+  onToggleActivity,
+  activityOpen,
+  onRedo,
+  onUndo
+}: Props) {
+  const [showColors, setShowColors] = useState(false);
 
   return (
     <>
@@ -35,7 +52,9 @@ export default function BoardControls({ tool, setTool, color, setColor, onToggle
             <button
               onClick={() => setTool(t.id)}
               className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                tool === t.id ? "bg-blue-500 text-white" : "text-black hover:bg-gray-100"
+                tool === t.id
+                  ? "bg-blue-500 text-white"
+                  : "text-black hover:bg-gray-100"
               }`}
             >
               {t.label}
@@ -44,6 +63,21 @@ export default function BoardControls({ tool, setTool, color, setColor, onToggle
         ))}
 
         <div className="w-px h-6 bg-gray-200" />
+
+        <button
+          onClick={onUndo}
+          title="Undo (Ctrl+Z)"
+          className="px-3 py-2 rounded text-sm font-medium transition-colors text-black hover:bg-gray-100"
+        >
+          ↩
+        </button>
+        <button
+          onClick={onRedo}
+          title="Redo (Ctrl+Shift+Z)"
+          className="px-3 py-2 rounded text-sm font-medium transition-colors text-black hover:bg-gray-100"
+        >
+          ↪
+        </button>
 
         {presetColors.map((c) => (
           <button
@@ -71,7 +105,9 @@ export default function BoardControls({ tool, setTool, color, setColor, onToggle
           onClick={onToggleActivity}
           title="Activity history"
           className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-            activityOpen ? "bg-blue-500 text-white" : "text-black hover:bg-gray-100"
+            activityOpen
+              ? "bg-blue-500 text-white"
+              : "text-black hover:bg-gray-100"
           }`}
         >
           ⏱
@@ -80,13 +116,15 @@ export default function BoardControls({ tool, setTool, color, setColor, onToggle
 
       {/* ── Mobile toolbar ── */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
-
         {showColors && (
           <div className="flex items-center justify-center gap-3 px-4 py-3 border-b">
             {presetColors.map((c) => (
               <button
                 key={c}
-                onClick={() => { setColor(c); setShowColors(false) }}
+                onClick={() => {
+                  setColor(c);
+                  setShowColors(false);
+                }}
                 className="w-9 h-9 rounded-full border-2 flex-shrink-0"
                 style={{
                   background: c,
@@ -120,7 +158,7 @@ export default function BoardControls({ tool, setTool, color, setColor, onToggle
           ))}
 
           <button
-            onClick={() => setShowColors(o => !o)}
+            onClick={() => setShowColors((o) => !o)}
             className={`flex items-center justify-center w-11 h-11 rounded-lg transition-colors ${
               showColors ? "bg-blue-500" : ""
             }`}
@@ -148,5 +186,5 @@ export default function BoardControls({ tool, setTool, color, setColor, onToggle
         <div className="h-safe-area-inset-bottom" />
       </div>
     </>
-  )
+  );
 }

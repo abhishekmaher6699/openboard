@@ -22,5 +22,7 @@ class BoardActivitySerializer(serializers.ModelSerializer):
             "action_type",
             "payload",
             "snapshot",
+            "diff",
+            "sequence",
             "created_at",
         ]

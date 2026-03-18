@@ -14,7 +14,10 @@ def board_activities(request, public_id):
     except Board.DoesNotExist:
         return Response({"detail": "Not found."}, status=404)
 
-    activities = BoardActivity.objects.filter(board=board).order_by("-created_at")[:20]
+    limit = int(request.query_params.get("limit", 50))
+    activities = BoardActivity.objects.filter(board=board).order_by("sequence", "created_at")
+    # get last N
+    total = activities.count()
+    activities = activities[max(0, total - limit):]
     serializer = BoardActivitySerializer(activities, many=True)
-    # return in chronological order for the frontend
-    return Response(list(reversed(serializer.data)))
+    return Response(serializer.data)

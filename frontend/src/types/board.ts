@@ -2,6 +2,8 @@ import { Viewport } from "pixi-viewport"
 import { Container, Graphics } from "pixi.js"
 import React from "react"
 
+export type { BoardDiff } from "../lib/diffUtils"
+
 export interface Owner {
   id: number
   username: string
@@ -211,4 +213,5 @@ export type BoardActivity = {
   payload: Record<string, any>
   snapshot: BoardObject[]
   created_at: string
+  sequence: number,
 }
