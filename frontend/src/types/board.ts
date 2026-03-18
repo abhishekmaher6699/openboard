@@ -187,6 +187,8 @@ export type UseDeleteProps = {
   onDelete: (id: string) => void
   onManyDelete: (ids: string[]) => void
   disabled: boolean | undefined
+  clearSelectionRef?: React.RefObject<() => void>;
+  hideToolbar?: () => void;
 }
 
 export type UseTextEditProps = {

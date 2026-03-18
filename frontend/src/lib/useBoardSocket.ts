@@ -11,34 +11,64 @@ type Props = {
 
 export default function useBoardSocket({ boardId, objectsRef, setObjects, onActivity, onRestore }: Props) {
   const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const unmountedRef = useRef(false);
+  const onActivityRef = useRef(onActivity);
+  onActivityRef.current = onActivity;
+  const onRestoreRef = useRef(onRestore);
+  onRestoreRef.current = onRestore;
 
-  useEffect(() => {
+  const connect = () => {
+    if (unmountedRef.current) return;
+
     const token = localStorage.getItem("access");
     const socket = new WebSocket(`ws://localhost:8000/ws/board/${boardId}/?token=${token}`);
     socketRef.current = socket;
 
-    socket.onopen = () => console.log("WS connected");
+    socket.onopen = () => {
+      console.log("WS connected");
+      reconnectAttemptsRef.current = 0;
+    };
+
     socket.onerror = (err) => console.error("WS error", err);
-    socket.onclose = () => console.log("WS closed");
+
+    socket.onclose = () => {
+      console.log("WS closed");
+      if (unmountedRef.current) return;
+
+      const attempts = reconnectAttemptsRef.current;
+      const delay = Math.min(1000 * 2 ** attempts, 30000);
+      console.log(`Reconnecting in ${delay}ms (attempt ${attempts + 1})`);
+      reconnectAttemptsRef.current += 1;
+
+      reconnectTimeoutRef.current = setTimeout(() => {
+        connect();
+      }, delay);
+    };
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       if (data.type === "activity_created") {
-        onActivity?.(data.activity);
+        onActivityRef.current?.(data.activity);
         return;
       }
 
       if (data.type === "restore_snapshot") {
-        onRestore?.(data.snapshot);
+        onRestoreRef.current?.(data.snapshot);
         return;
       }
 
-      if (data.type === "update_object" || data.type === "move_shape" || data.type === "resize_shape" ||
-          data.type === "update_color" || data.type === "update_text" || data.type === "bring_forward" ||
-          data.type === "send_back" || data.type === "bring_to_front" || data.type === "send_to_back" ||
-          data.type === "bold_text" || data.type === "italic_text" || data.type === "font_size" ||
-          data.type === "align_text" || data.type === "font_family" || data.type === "text_color") {
+      const SINGLE_OBJECT_UPDATE_TYPES = new Set([
+        "update_object", "move_shape", "resize_shape",
+        "update_color", "update_text", "bring_forward",
+        "send_back", "bring_to_front", "send_to_back",
+        "bold_text", "italic_text", "font_size",
+        "align_text", "font_family", "text_color",
+      ]);
+
+      if (SINGLE_OBJECT_UPDATE_TYPES.has(data.type)) {
         setObjects((prev) =>
           prev.map((obj) => {
             if (obj.id !== data.id) return obj;
@@ -84,8 +114,17 @@ export default function useBoardSocket({ boardId, objectsRef, setObjects, onActi
         });
       }
     };
+  };
 
-    return () => socket.close();
+  useEffect(() => {
+    unmountedRef.current = false;
+    connect();
+
+    return () => {
+      unmountedRef.current = true;
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      socketRef.current?.close();
+    };
   }, [boardId]);
 
   const snapshot = () => [...objectsRef.current];
@@ -97,31 +136,37 @@ export default function useBoardSocket({ boardId, objectsRef, setObjects, onActi
   };
 
   const sendUpdate = (
-  id: string,
-  changes: Partial<BoardObject> & { data?: Record<string, any> },
-  actionType: string = "update_object"
-) =>
-  send({ type: actionType, id, changes, before_snapshot: snapshot() });
+    id: string,
+    changes: Partial<BoardObject> & { data?: Record<string, any> },
+    actionType: string = "update_object"
+  ) =>
+    send({ type: actionType, id, changes, before_snapshot: snapshot() });
 
-const sendManyMoves = (moves: { id: string; x: number; y: number }[]) =>
-  send({ type: "move_many", moves, before_snapshot: snapshot() });
+  const sendManyMoves = (moves: { id: string; x: number; y: number }[]) =>
+    send({ type: "move_many", moves, before_snapshot: snapshot() });
 
-const sendResizeMany = (resizes: { id: string; width: number; height: number; x: number; y: number }[]) =>
-  send({ type: "resize_many", resizes, before_snapshot: snapshot() });
+  const sendResizeMany = (resizes: { id: string; width: number; height: number; x: number; y: number }[]) =>
+    send({ type: "resize_many", resizes, before_snapshot: snapshot() });
 
-const sendDelete = (id: string, before?: BoardObject[]) =>
-  send({ type: "delete_shape", id, before_snapshot: before ?? snapshot() });
+  const sendDelete = (id: string, before?: BoardObject[]) =>
+    send({ type: "delete_shape", id, before_snapshot: before ?? snapshot() });
 
-const sendManyDelete = (ids: string[], before?: BoardObject[]) =>
-  send({ type: "delete_many", ids, before_snapshot: before ?? snapshot() });
+  const sendManyDelete = (ids: string[], before?: BoardObject[]) =>
+    send({ type: "delete_many", ids, before_snapshot: before ?? snapshot() });
 
-const sendCreate = (object: BoardObject, before?: BoardObject[]) =>
-  send({ type: "create_shape", object, before_snapshot: before ?? snapshot() });
+  const sendCreate = (object: BoardObject, before?: BoardObject[]) =>
+    send({ type: "create_shape", object, before_snapshot: before ?? snapshot() });
 
-const sendRestoreSnapshot = (snapshot: BoardObject[]) =>
-  send({ type: "restore_snapshot", snapshot });
+  const sendRestoreSnapshot = (snap: BoardObject[]) =>
+    send({ type: "restore_snapshot", snapshot: snap });
 
+  const sendUndo = () =>{ 
+    send({ type: "undo" });
+  }
 
+  const sendRedo = () =>{ 
+    send({ type: "redo" });
+  }
   return {
     sendUpdate,
     sendManyMoves,
@@ -130,5 +175,7 @@ const sendRestoreSnapshot = (snapshot: BoardObject[]) =>
     sendManyDelete,
     sendCreate,
     sendRestoreSnapshot,
+    sendUndo,
+    sendRedo
   };
 }

@@ -8,6 +8,8 @@ type Props = {
   onClose: () => void;
   onPreview: (snapshot: BoardObject[], label: string) => void;
   onRestore: (snapshot: BoardObject[], activityId: string) => void;
+  activeSnapshot: BoardObject[] | null;
+  exitPreview: () => void
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -33,10 +35,9 @@ const ACTION_LABELS: Record<string, string> = {
   text_color: "changed text color",
 };
 
-// group consecutive activities by same user + same type within 5 seconds
 function groupActivities(activities: BoardActivity[]) {
+  if (!activities) return [];
   const groups: BoardActivity[][] = [];
-
   activities.forEach((activity) => {
     const last = groups[groups.length - 1];
     if (
@@ -52,13 +53,14 @@ function groupActivities(activities: BoardActivity[]) {
       groups.push([activity]);
     }
   });
-
   return groups;
 }
 
 function formatTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatDate(iso: string) {
@@ -71,6 +73,29 @@ function formatDate(iso: string) {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+function isActiveGroup(
+  group: BoardActivity[],
+  activeSnapshot: BoardObject[] | null,
+): boolean {
+  if (!activeSnapshot) return false;
+  for (let i = group.length - 1; i >= 0; i--) {
+    const snap = group[i].snapshot as BoardObject[] | null;
+    if (snap != null && JSON.stringify(snap) === JSON.stringify(activeSnapshot))
+      return true;
+  }
+  return false;
+}
+
+function isActiveActivity(
+  activity: BoardActivity,
+  activeSnapshot: BoardObject[] | null,
+): boolean {
+  if (!activeSnapshot) return false;
+  const snap = activity.snapshot as BoardObject[] | null;
+  if (snap == null) return false;
+  return JSON.stringify(snap) === JSON.stringify(activeSnapshot);
+}
+
 export default function ActivityPanel({
   activities,
   loading,
@@ -78,11 +103,13 @@ export default function ActivityPanel({
   onClose,
   onPreview,
   onRestore,
+  activeSnapshot,
+  exitPreview
 }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
-  const groups = groupActivities(activities);
+  const groups = groupActivities([...activities].reverse());
 
   const toggleGroup = (idx: number) => {
     setExpandedGroups((prev) => {
@@ -97,13 +124,10 @@ export default function ActivityPanel({
     allGroups: BoardActivity[][],
     groupIdx: number,
   ): BoardObject[] | null {
-    // check current group (latest first)
     for (let i = group.length - 1; i >= 0; i--) {
       const snap = group[i].snapshot;
       if (snap != null) return snap as BoardObject[];
     }
-
-    // fallback to previous groups
     for (let g = groupIdx - 1; g >= 0; g--) {
       const grp = allGroups[g];
       for (let i = grp.length - 1; i >= 0; i--) {
@@ -111,106 +135,86 @@ export default function ActivityPanel({
         if (snap != null) return snap as BoardObject[];
       }
     }
-
     return null;
   }
 
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0,
-        right: isOpen ? 0 : "-320px",
-        width: "320px",
-        height: "100vh",
-        background: "white",
-        borderLeft: "1px solid #e2e8f0",
-        boxShadow: isOpen ? "-4px 0 16px rgba(0,0,0,0.08)" : "none",
-        transition: "right 0.25s ease",
-        zIndex: 9998,
-        display: "flex",
-        flexDirection: "column",
-      }}
+      className={`fixed top-0 right-0 h-screen w-80 bg-white border-l border-slate-200 flex flex-col z-[9998] transition-transform duration-250 ${
+        isOpen ? "translate-x-0" : "translate-x-full"
+      }`}
+      style={{ boxShadow: isOpen ? "-4px 0 16px rgba(0,0,0,0.08)" : "none" }}
     >
       {/* Header */}
-      <div
-        style={{
-          padding: "16px",
-          borderBottom: "1px solid #e2e8f0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <span style={{ fontWeight: 500, fontSize: "15px", color: "#1a1a1a" }}>
-          Activity
-        </span>
+      <div className="px-4 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
+        <span className="font-medium text-[15px] text-gray-900">Activity</span>
         <button
           onClick={onClose}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "18px",
-            color: "#6b7280",
-            padding: "2px 6px",
-            borderRadius: "4px",
-          }}
+          className="text-gray-400 hover:text-gray-600 text-lg px-1.5 py-0.5 rounded hover:bg-gray-100 transition-colors"
         >
           ×
         </button>
       </div>
 
       {/* Feed */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+      <div className="flex-1 overflow-y-auto py-2">
         {loading && (
-          <div
-            style={{
-              padding: "24px",
-              textAlign: "center",
-              color: "#9ca3af",
-              fontSize: "14px",
-            }}
-          >
+          <div className="py-6 text-center text-sm text-gray-400">
             Loading...
           </div>
         )}
 
         {!loading && activities.length === 0 && (
-          <div
-            style={{
-              padding: "24px",
-              textAlign: "center",
-              color: "#9ca3af",
-              fontSize: "14px",
-            }}
-          >
+          <div className="py-6 text-center text-sm text-gray-400">
             No activity yet
           </div>
         )}
+
+        <div
+          className={`border-b border-slate-100 px-4 py-2.5 flex items-center gap-2.5 cursor-pointer transition-colors ${
+            !activeSnapshot ? "bg-blue-50" : "hover:bg-gray-50"
+          }`}
+          onClick={() => {
+            if (activeSnapshot) exitPreview();
+          }}
+        >
+          <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
+            <span className="text-white text-[10px] font-semibold">●</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] text-gray-900 font-medium">
+              Current state
+            </div>
+            <div className="text-[11px] text-gray-400 mt-0.5">Live board</div>
+          </div>
+          {!activeSnapshot && (
+            <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+              viewing
+            </span>
+          )}
+        </div>
 
         {groups.map((group, groupIdx) => {
           const first = group[0];
           const last = group[group.length - 1];
           const isExpanded = expandedGroups.has(groupIdx);
           const isMultiple = group.length > 1;
-          const label = ACTION_LABELS[first.action_type] ?? first.action_type;
+          const label = ACTION_LABELS[first.action_type] ?? "updated an object";
+          const isActive = isActiveGroup(group, activeSnapshot);
 
           return (
-            <div key={groupIdx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+            <div
+              key={groupIdx}
+              className={`border-b border-slate-100 ${isActive ? "bg-blue-50" : ""}`}
+            >
               {/* Group header */}
               <div
-                style={{
-                  padding: "10px 16px",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "10px",
-                  cursor: "pointer",
-                }}
+                className={`px-4 py-2.5 flex items-start gap-2.5 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  isActive ? "hover:bg-blue-100" : ""
+                }`}
                 onClick={() => {
                   const snapshot = getSafeSnapshot(group, groups, groupIdx);
                   if (snapshot == null) return;
-                  if (!snapshot) return;
                   onPreview(
                     snapshot,
                     `${formatDate(last.created_at)} ${formatTime(last.created_at)}`,
@@ -219,84 +223,51 @@ export default function ActivityPanel({
               >
                 {/* Avatar */}
                 <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white shrink-0"
                   style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "50%",
                     background: `hsl(${(first.user?.username?.charCodeAt(0) ?? 0) * 20}, 60%, 60%)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    color: "white",
-                    flexShrink: 0,
                   }}
                 >
                   {first.user?.username?.[0]?.toUpperCase() ?? "?"}
                 </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "13px", color: "#1a1a1a" }}>
-                    <span style={{ fontWeight: 500 }}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] text-gray-900">
+                    <span className="font-medium">
                       {first.user?.username ?? "Unknown"}
                     </span>{" "}
                     {isMultiple ? `${label} (×${group.length})` : label}
                   </div>
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: "#9ca3af",
-                      marginTop: "2px",
-                    }}
-                  >
+                  <div className="text-[11px] text-gray-400 mt-0.5">
                     {formatDate(first.created_at)} ·{" "}
                     {formatTime(first.created_at)}
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    flexShrink: 0,
-                  }}
-                >
-                  {/* Restore button */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {isActive && (
+                    <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                      viewing
+                    </span>
+                  )}
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setConfirmingId(`${groupIdx}`);
                     }}
-                    style={{
-                      fontSize: "11px",
-                      padding: "2px 6px",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      background: "white",
-                      color: "#6b7280",
-                    }}
+                    className="text-[11px] px-1.5 py-0.5 border border-slate-200 rounded cursor-pointer bg-white text-gray-500 hover:bg-gray-50 transition-colors"
                   >
                     Restore
                   </button>
 
-                  {/* Expand arrow */}
                   {isMultiple && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleGroup(groupIdx);
                       }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "#6b7280",
-                        fontSize: "12px",
-                        padding: "2px",
-                      }}
+                      className="bg-transparent border-none cursor-pointer text-gray-400 text-xs p-0.5 hover:text-gray-600"
                     >
                       {isExpanded ? "▲" : "▼"}
                     </button>
@@ -306,92 +277,68 @@ export default function ActivityPanel({
 
               {/* Expanded items */}
               {isExpanded &&
-                group.map((activity, i) => (
-                  <div
-                    key={activity.id}
-                    onClick={() => {
-                      const snap = activity.snapshot as BoardObject[];
-                      if (snap === null ) return;
-                      onPreview(
-                        snap,
-                        `${formatDate(activity.created_at)} ${formatTime(activity.created_at)}`,
-                      );
-                    }}
-                    style={{
-                      padding: "6px 16px 6px 54px",
-                      fontSize: "12px",
-                      color: "#6b7280",
-                      cursor: "pointer",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      background: "#f9fafb",
-                    }}
-                  >
-                    <span>{label}</span>
-                    <span style={{ fontSize: "11px" }}>
-                      {formatTime(activity.created_at)}
-                    </span>
-                  </div>
-                ))}
+                group.map((activity) => {
+                  const isActiveSub = isActiveActivity(
+                    activity,
+                    activeSnapshot,
+                  );
+                  return (
+                    <div
+                      key={activity.id}
+                      onClick={() => {
+                        const snap = activity.snapshot as BoardObject[] | null;
+                        if (snap === null) return;
+                        onPreview(
+                          snap,
+                          `${formatDate(activity.created_at)} ${formatTime(activity.created_at)}`,
+                        );
+                      }}
+                      className={`pl-[54px] pr-4 py-1.5 text-xs text-gray-500 cursor-pointer flex justify-between items-center transition-colors ${
+                        isActiveSub
+                          ? "bg-blue-100"
+                          : "bg-gray-50 hover:bg-gray-100"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>{label}</span>
+                        {isActiveSub && (
+                          <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                            viewing
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px]">
+                        {formatTime(activity.created_at)}
+                      </span>
+                    </div>
+                  );
+                })}
 
-              {/* Confirm restore popup */}
+              {/* Confirm restore */}
               {confirmingId === `${groupIdx}` && (
                 <div
-                  style={{
-                    margin: "0 16px 10px",
-                    padding: "12px",
-                    background: "#fef9c3",
-                    border: "1px solid #fde047",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    color: "#713f12",
-                  }}
+                  className="mx-4 mb-2.5 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-[13px] text-yellow-900"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div style={{ marginBottom: "8px", fontWeight: 500 }}>
+                  <div className="mb-2 font-medium">
                     Restore board to this state?
                   </div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      marginBottom: "10px",
-                      color: "#92400e",
-                    }}
-                  >
+                  <div className="text-xs mb-2.5 text-yellow-800">
                     This will restore the board for all users.
                   </div>
-                  <div style={{ display: "flex", gap: "6px" }}>
+                  <div className="flex gap-1.5">
                     <button
                       onClick={() => {
                         onRestore(last.snapshot as BoardObject[], last.id);
                         setConfirmingId(null);
                       }}
-                      style={{
-                        flex: 1,
-                        padding: "6px",
-                        background: "#1a1a1a",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                      }}
+                      className="flex-1 py-1.5 bg-gray-900 text-white border-none rounded cursor-pointer text-xs font-medium hover:bg-gray-700 transition-colors"
                     >
                       Restore for everyone
                     </button>
                     <button
                       onClick={() => setConfirmingId(null)}
-                      style={{
-                        padding: "6px 10px",
-                        background: "white",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        color: "#6b7280",
-                      }}
+                      className="px-2.5 py-1.5 bg-white border border-slate-200 rounded cursor-pointer text-xs text-gray-500 hover:bg-gray-50 transition-colors"
                     >
                       Cancel
                     </button>

@@ -7,12 +7,16 @@ import ActivityPanel from "./features/activity/ActivityPanel";
 import PreviewBanner from "./features/activity/Previewbanner";
 import { useFloatingToolbar } from "./canvas/interaction/useFloatingtoolbar";
 import { useBoardObjects } from "./features/useBoardObjects";
-import { useBoardToolbar } from "./features/useBoardtoolbar";
-import { useBoardActivity } from "../../hooks/useboardactivity";
-import { useActivityPreview } from "../../hooks/useactivitypreview";
+import { useBoardToolbar } from "./features/useBoardToolbar";
+import { useBoardActivity } from "../../hooks/useBoardActivity";
+import { useActivityPreview } from "../../hooks/useActivityPreview";
 import type { BoardObject, Tool } from "../../types/board";
 import { getBoardObjects } from "../../api/board_objects";
 import BoardControls from "./features/BoardControls";
+import { useUndoRedo } from "./canvas/interaction/useUndoRedo";
+
+
+
 
 export default function PixiBoard({ boardId }: { boardId: string }) {
   const [objects, setObjects] = useState<BoardObject[]>([]);
@@ -32,9 +36,19 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     objectMapRef.current = new Map(objects.map((o) => [o.id, o]));
   }, [objects]);
 
-  const { toolbar, update: updateToolbar, hide: hideToolbar } = useFloatingToolbar(viewportRef, objectMapRef);
+  const {
+    toolbar,
+    update: updateToolbar,
+    hide: hideToolbar,
+  } = useFloatingToolbar(viewportRef, objectMapRef);
   const { activities, loading, addActivity } = useBoardActivity(boardId);
-  const { isPreviewMode, previewObjects, previewLabel, enterPreview, exitPreview } = useActivityPreview();
+  const {
+    isPreviewMode,
+    previewObjects,
+    previewLabel,
+    enterPreview,
+    exitPreview,
+  } = useActivityPreview();
 
   useEffect(() => {
     getBoardObjects(boardId).then(setObjects);
@@ -51,6 +65,12 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     },
   });
 
+
+  useUndoRedo({
+    onUndo: socket.sendUndo,
+    onRedo: socket.sendRedo
+  })
+  
   const { sendRestoreSnapshot } = socket;
 
   const {
@@ -66,18 +86,30 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   } = useBoardObjects({ boardId, color, objects, setObjects, ...socket });
 
   const {
-    handleDelete, handleDuplicate,
-    handleBringForward, handleSendBack,
-    handleBringToFront, handleSendToBack,
-    handleBold, handleItalic,
-    handleFontSize, handleAlign,
-    handleFontFamily, handleTextColor,
+    handleDelete,
+    handleDuplicate,
+    handleBringForward,
+    handleSendBack,
+    handleBringToFront,
+    handleSendToBack,
+    handleBold,
+    handleItalic,
+    handleFontSize,
+    handleAlign,
+    handleFontFamily,
+    handleTextColor,
   } = useBoardToolbar({
-    boardId, selectedIds, objectsRef, setObjects,
-    createNewObject, deleteObject, deleteManyObjects,
-    clearSelectionRef, hideToolbar,
+    boardId,
+    selectedIds,
+    objectsRef,
+    setObjects,
+    createNewObject,
+    deleteObject,
+    deleteManyObjects,
+    clearSelectionRef,
+    hideToolbar,
     sendCreate: socket.sendCreate,
-    sendUpdate: socket.sendUpdate
+    sendUpdate: socket.sendUpdate,
   });
 
   const handleColorChange = (newColor: string) => {
@@ -92,6 +124,13 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   };
 
   const displayObjects = isPreviewMode ? previewObjects : objects;
+
+    useEffect(() => {
+      if (isPreviewMode) {
+        clearSelectionRef.current?.()
+        hideToolbar()
+      }
+    }, [isPreviewMode])
 
   return (
     <>
@@ -108,7 +147,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         setTool={setTool}
         color={color}
         setColor={handleColorChange}
-        onToggleActivity={() => setActivityPanelOpen(o => !o)}
+        onToggleActivity={() => setActivityPanelOpen((o) => !o)}
         activityOpen={activityPanelOpen}
       />
 
@@ -136,6 +175,8 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         onClose={() => setActivityPanelOpen(false)}
         onPreview={enterPreview}
         onRestore={handleRestore}
+        activeSnapshot={isPreviewMode ? previewObjects : null}
+        exitPreview={exitPreview}
       />
 
       <Application

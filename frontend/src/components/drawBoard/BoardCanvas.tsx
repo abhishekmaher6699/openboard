@@ -156,7 +156,9 @@ export default function BoardCanvas({
     interactionRef,
     onDelete,
     onManyDelete,
-    disabled: previewMode
+    disabled: previewMode,
+    clearSelectionRef,
+    hideToolbar: onToolbarUpdate ? () => onToolbarUpdate(new Set(), undefined) : undefined,
   });
 
   return null;

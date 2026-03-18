@@ -1,22 +1,26 @@
 import { useEffect } from "react";
 import type { UseDeleteProps } from "../../../../types/board";
 
-
 export function useDelete({
   interactionRef,
   onDelete,
   onManyDelete,
-  disabled
+  disabled,
+  clearSelectionRef,
+  hideToolbar,
 }: UseDeleteProps) {
 
   const interaction = interactionRef.current
-  
-  useEffect(() => {
 
+  useEffect(() => {
     if (disabled) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Delete" && e.key !== "Backspace") return;
       if (interaction.selected.size === 0) return;
+
+      // ignore if user is typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
 
       const ids = [...interaction.selected];
 
@@ -27,10 +31,11 @@ export function useDelete({
       }
 
       interaction.selected = new Set();
-
       if (interaction.selectionGraphics) {
         interaction.selectionGraphics.visible = false;
       }
+      clearSelectionRef?.current?.()
+      hideToolbar?.()
     };
 
     window.addEventListener("keydown", handleKeyDown);
