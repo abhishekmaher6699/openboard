@@ -21,7 +21,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   const [color, setColor] = useState("#ff0000");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  // const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   const viewportRef = useRef<any>(null);
   const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
@@ -34,17 +34,18 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     objectMapRef.current = new Map(objects.map((o) => [o.id, o]));
   }, [objects]);
 
-  // get current user id for per-user cursor tracking
-  useEffect(() => {
-    const token = localStorage.getItem("access");
-    if (!token) return;
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      setCurrentUserId(payload.user_id ?? null);
-    } catch {
-      setCurrentUserId(null);
-    }
-  }, []);
+const [currentUserId] = useState<number | null>(() => {
+  const token = localStorage.getItem("access");
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const id = Number(payload.user_id);
+    return isNaN(id) ? null : id;
+  } catch {
+    return null;
+  }
+});
+
 
   const {
     toolbar,
@@ -68,7 +69,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     onRedoApplied,
     onRestoreApplied,
     currentActivityId,
-  } = useBoardActivity(boardId);
+  } = useBoardActivity(boardId, currentUserId);
 
   useEffect(() => {
     getBoardObjects(boardId).then(setObjects);

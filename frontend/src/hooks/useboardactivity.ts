@@ -4,7 +4,8 @@ import type { BoardActivity } from "../types/board";
 
 const ACTIVITY_LIMIT = 50;
 
-export function useBoardActivity(boardId: string) {
+export function useBoardActivity(boardId: string, currentUserId: number | null) {
+  console.log("useBoardActivity render, currentUserId:", currentUserId);
   const [activities, setActivities] = useState<BoardActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
@@ -18,10 +19,10 @@ export function useBoardActivity(boardId: string) {
       .then((data) => {
         const sliced = data.slice(-ACTIVITY_LIMIT);
         setActivities(sliced);
-        console.log(sliced)
-        const last = sliced[sliced.length - 1];
-        cursorSequenceRef.current = last?.sequence ?? 0;
-        setCurrentActivityId(last?.id ?? null);
+        const myLast = [...sliced].reverse().find((a) => Number(a.user?.id) === currentUserId);
+        cursorSequenceRef.current = myLast?.sequence ?? 0;
+        setCurrentActivityId(myLast?.id ?? null);
+
         setReady(true);
         setLoading(false);
       })
@@ -31,10 +32,8 @@ export function useBoardActivity(boardId: string) {
       });
   }, [boardId]);
 
-  // new activity arrives — remove deleted ids, append new activity
   const addActivity = (activity: BoardActivity, deletedIds?: string[]) => {
     setActivities((prev) => {
-      // remove truncated activities first
       const filtered = deletedIds?.length
         ? prev.filter((a) => !deletedIds.includes(a.id))
         : prev;
@@ -42,12 +41,17 @@ export function useBoardActivity(boardId: string) {
       if (filtered.some((a) => a.id === activity.id)) return filtered;
 
       const next = [...filtered, activity].slice(-ACTIVITY_LIMIT);
-      // console.log(filtered)
-      cursorSequenceRef.current = activity.sequence ?? 0;
-      setCurrentActivityId(activity.id);
+
+      // ✅ only move cursor if this activity is mine
+      if (Number(activity.user?.id) === currentUserId) {
+        cursorSequenceRef.current = activity.sequence ?? 0;
+        setCurrentActivityId(activity.id);
+      }
+
       return next;
     });
   };
+
 
   // undo applied — move cursor to cursor_sequence sent by server
   const onUndoApplied = (

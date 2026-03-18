@@ -121,6 +121,7 @@ export default function ActivityPanel({
     });
   };
 
+  console.log(currentActivityId)
   const isGroupActive = (group: BoardActivity[]) =>
     !activeSnapshot && group.some((a) => a.id === currentActivityId);
 
@@ -176,6 +177,7 @@ export default function ActivityPanel({
         </div> */}
 
         {groups.map((group, groupIdx) => {
+
           const first = group[0];
           const last = group[group.length - 1];
           const isExpanded = expandedGroups.has(groupIdx);
@@ -209,6 +211,7 @@ export default function ActivityPanel({
                 >
                   {first.user?.username?.[0]?.toUpperCase() ?? "?"}
                 </div>
+                
 
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] text-gray-900">
@@ -218,6 +221,9 @@ export default function ActivityPanel({
                   <div className="text-[11px] text-gray-400 mt-0.5">
                     {formatDate(first.created_at)} · {formatTime(first.created_at)}
                   </div>
+                  {/* <div className="text-black">
+                    {first.id}
+                  </div> */}
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
