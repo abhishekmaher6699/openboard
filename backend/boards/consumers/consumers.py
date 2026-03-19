@@ -50,6 +50,9 @@ class BoardConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
+        print(f"✅ CONNECTED: {self.channel_name} | board: {self.board_id}")
+        print(f"📡 Active users in board: {len(_active_users.get(self.board_id, {}))}")
+
         print("CONNECTED:", self.channel_name)
 
         if self.user and self.user.is_authenticated:
@@ -153,6 +156,14 @@ class BoardConsumer(AsyncWebsocketConsumer):
 
         if msg_type == "restore_snapshot":
             await self._handle_restore(data, user)
+            return
+
+        if msg_type == "chat_message":
+            await self._handle_chat_message(data, user)
+            return
+
+        if msg_type == "chat_reaction":
+            await self._handle_chat_reaction(data, user)
             return
 
         # broadcast all other messages to everyone
@@ -295,6 +306,36 @@ class BoardConsumer(AsyncWebsocketConsumer):
             {"type": "board_event_others", "message": activity_message, "sender_channel": self.channel_name}
         )
 
+    async def _handle_chat_message(self, data, user):
+        if not user or not user.is_authenticated:
+            return
+        import uuid
+        from django.utils import timezone
+
+        text = data.get("text", "").strip()
+        if not text:
+            return
+
+        msg = {
+            "type": "chat_message",
+            "id": str(uuid.uuid4()),
+            "user_id": user.id,
+            "username": user.username,
+            "text": text,
+            "reactions": {},
+        }
+        await self._send_to_sender_and_others(msg)
+
+    async def _handle_chat_reaction(self, data, user):
+        if not user or not user.is_authenticated:
+            return
+
+        await self._send_to_sender_and_others({
+            "type": "chat_reaction",
+            "message_id": data.get("message_id"),
+            "emoji": data.get("emoji"),
+            "user_id": user.id,
+        })
     # ── utils ─────────────────────────────────────────────────────────
 
     async def _send_to_sender_and_others(self, msg):

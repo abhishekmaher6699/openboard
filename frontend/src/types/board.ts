@@ -39,6 +39,8 @@ export type UseBoardSocketProps = {
   onRestore?: (snapshot: BoardObject[], deletedIds: string[]) => void;
   onUndoApplied?: (cursorSequence: number, userId: number) => void;
   onRedoApplied?: (cursorSequence: number, userId: number) => void;
+  onChatMessage?: (msg: ChatMessage) => void;
+  onReaction?: (messageId: string, emoji: string, userId: number) => void;
 };
 
 import type { BoardDiff } from "../lib/diffUtils"

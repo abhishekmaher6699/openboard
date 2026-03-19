@@ -83,7 +83,7 @@ ALLOWED_HOSTS = ["*"]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://10.131.90.170:5173",
+    "http://192.168.1.68:5173",
 
 ]
 
@@ -115,6 +115,8 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [("127.0.0.1", 6379)],
+            "capacity": 1500,
+            "expiry": 2,
         },
     },
 }

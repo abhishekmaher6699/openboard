@@ -48,6 +48,7 @@ export function usePresence({
   useEffect(() => {
     const unregister = onMessage((data) => {
       if (data.type === "presence_init") {
+        console.log("presence init received, setting users")
         setUsers(data.users.map((u: PresenceUser) => ({ ...u, cursor: null })));
         return true;
       }
@@ -94,29 +95,26 @@ export function usePresence({
   }, [onMessage]);
 
   useEffect(() => {
-    let pending = false;
+    let lastSent = 0;
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (pending) return;
-      pending = true;
+      const now = Date.now();
+      if (now - lastSent < 150) return; // max 20 updates/sec
+      lastSent = now;
 
-      requestAnimationFrame(() => {
-        pending = false;
+      const ws = socketRef.current;
+      const viewport = viewportRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN || !viewport) return;
 
-        const ws = socketRef.current;
-        const viewport = viewportRef.current;
-        if (!ws || ws.readyState !== WebSocket.OPEN || !viewport) return;
+      const worldPos = viewport.toWorld(e.clientX, e.clientY);
 
-        const worldPos = viewport.toWorld(e.clientX, e.clientY);
-
-        ws.send(
-          JSON.stringify({
-            type: "cursor_move",
-            x: worldPos.x,
-            y: worldPos.y,
-          }),
-        );
-      });
+      ws.send(
+        JSON.stringify({
+          type: "cursor_move",
+          x: worldPos.x,
+          y: worldPos.y,
+        }),
+      );
     };
 
     window.addEventListener("mousemove", handleMouseMove);

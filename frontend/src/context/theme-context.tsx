@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark" ;
+type Theme = "light" | "dark";
 
 type ThemeContextType = {
   theme: Theme;
@@ -10,30 +10,23 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>(() => {
+    return (localStorage.getItem("theme") as Theme) ?? "light";
+  });
 
-  const applyTheme = (theme: Theme) => {
-    const root = document.documentElement;
-
-    root.classList.remove("dark");
-
-    if (theme === "dark") {
-      root.classList.add("dark");
-    }
-
+  const applyTheme = (t: Theme) => {
+    document.documentElement.classList.toggle("dark", t === "dark");
   };
 
-  const setTheme = (theme: Theme) => {
-    localStorage.setItem("theme", theme);
-    setThemeState(theme);
-    applyTheme(theme);
-  };
-
+  // Apply on mount and whenever theme changes
   useEffect(() => {
-    const saved = (localStorage.getItem("theme") as Theme) || "system";
-    setThemeState(saved);
-    applyTheme(saved);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
+
+  const setTheme = (t: Theme) => {
+    localStorage.setItem("theme", t);
+    setThemeState(t);
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
@@ -41,7 +34,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     </ThemeContext.Provider>
   );
 }
-
 export function useTheme() {
   const context = useContext(ThemeContext);
 

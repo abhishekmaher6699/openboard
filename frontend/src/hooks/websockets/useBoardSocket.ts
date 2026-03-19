@@ -33,6 +33,8 @@ export default function useBoardSocket({
   onRestore,
   onUndoApplied,
   onRedoApplied,
+  onChatMessage,
+  onReaction,
 }: UseBoardSocketProps) {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,6 +55,11 @@ export default function useBoardSocket({
   onRestoreRef.current = onRestore;
   onUndoAppliedRef.current = onUndoApplied;
   onRedoAppliedRef.current = onRedoApplied;
+
+  const onChatMessageRef = useRef(onChatMessage);
+  const onReactionRef = useRef(onReaction);
+  onChatMessageRef.current = onChatMessage;
+  onReactionRef.current = onReaction;
 
   const registerMessageHandler = useCallback((handler: (data: any) => boolean) => {
     externalHandlersRef.current.push(handler);
@@ -162,6 +169,22 @@ export default function useBoardSocket({
       });
       return;
     }
+
+    if (data.type === "chat_message") {
+      onChatMessageRef.current?.({
+        id: data.id,
+        userId: data.user_id,
+        username: data.username,
+        text: data.text,
+        reactions: data.reactions ?? {},
+      });
+      return;
+    }
+
+    if (data.type === "chat_reaction") {
+      onReactionRef.current?.(data.message_id, data.emoji, data.user_id);
+      return;
+    }
   };
 
   const connect = async () => {
@@ -225,13 +248,18 @@ export default function useBoardSocket({
   };
 
   useEffect(() => {
-    if (initializedRef.current) return;
+    console.log("useBoardSocket mounted, boardId:", boardId);
+    if (initializedRef.current) {
+       console.log("⚠️ already initialized, skipping");
+       return
+    };
     initializedRef.current = true;
-
+    console.log("✅ connecting...");
     unmountedRef.current = false;
     connect();
 
     return () => {
+        console.log("🔴 useBoardSocket cleanup fired");
       unmountedRef.current = true;
 
       if (reconnectTimeoutRef.current) {
@@ -299,6 +327,13 @@ export default function useBoardSocket({
   const sendUndo = () => send({ type: "undo" });
   const sendRedo = () => send({ type: "redo" });
 
+  const sendChatMessage = (text: string) =>
+    send({ type: "chat_message", text });
+
+  const sendReaction = (messageId: string, emoji: string) =>
+    send({ type: "chat_reaction", message_id: messageId, emoji });
+
+
   return {
     socketRef,
     registerMessageHandler,
@@ -312,5 +347,7 @@ export default function useBoardSocket({
     sendRestoreSnapshot,
     sendUndo,
     sendRedo,
+    sendChatMessage,
+    sendReaction
   };
 }

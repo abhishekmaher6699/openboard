@@ -1,5 +1,5 @@
 import { Application } from "@pixi/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import BoardCanvas from "./BoardCanvas";
 import useBoardSocket from "../../../hooks/websockets/useBoardSocket";
 import FloatingToolbar from "../controls/FloatingToolbar";
@@ -19,11 +19,17 @@ import { getBoardObjects } from "../../../api/boardObjects";
 import BoardControls from "../controls/BoardControls";
 import RemoteSelections from "../presence/RemoteSelection";
 
+import { useChat } from "../../../hooks/board/chat/useChat";
+import ChatPanel from "../chat/ChatPanel";
+import { MessageCircle } from "lucide-react";
+
 import { useTheme } from "../../../context/theme-context";
 import ThemeToggle from "../../ui/ThemeToggle";
 
-export default function PixiBoard({ boardId }: { boardId: string }) {
+export default memo(function PixiBoard({ boardId }: { boardId: string }) {
+   console.log("PixiBoard render", boardId);
   const { theme } = useTheme();
+  console.log("useTheme value:", theme);
   const isDark = theme === "dark";
 
   const [objects, setObjects] = useState<BoardObject[]>([]);
@@ -34,6 +40,38 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
   const [strokeWidth, setStrokeWidth] = useState(3);
+
+  const [currentUserId] = useState<number | null>(() => {
+    const token = localStorage.getItem("access");
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const id = Number(payload.user_id);
+      return isNaN(id) ? null : id;
+    } catch {
+      return null;
+    }
+  });
+
+  const { messages, onChatMessage, onReaction } = useChat(currentUserId);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+
+  const renderCount = useRef(0);
+  renderCount.current++;
+  console.log(`PixiBoard render #${renderCount.current}`, {
+    theme,
+    isDark,
+    objects: objects.length,
+    tool,
+    color,
+    selectedIds,
+    activityPanelOpen,
+    chatOpen,
+    unreadCount,
+    strokeWidth,
+  });
 
   const viewportRef = useRef<any>(null);
   const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
@@ -49,17 +87,19 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     setColor(isDark ? "#ffffff" : "#000000");
   }, [isDark]);
 
-  const [currentUserId] = useState<number | null>(() => {
-    const token = localStorage.getItem("access");
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      const id = Number(payload.user_id);
-      return isNaN(id) ? null : id;
-    } catch {
-      return null;
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
     }
-  });
+    if (!chatOpen) setUnreadCount((c) => c + 1);
+  }, [messages]);
+
+  useEffect(() => {
+    if (chatOpen) setUnreadCount(0);
+  }, [chatOpen]);
 
   const {
     toolbar,
@@ -109,6 +149,8 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     onRedoApplied: (cursorSequence, userId) => {
       onRedoApplied(cursorSequence, Number(userId), Number(currentUserId));
     },
+    onChatMessage,
+    onReaction,
   });
 
   const { users, otherUsers } = usePresence({
@@ -270,9 +312,37 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         exitPreview={exitPreview}
       />
 
-    <div className="fixed top-16 left-4 z-9999 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-2 shadow-lg">
-      <ThemeToggle />
-    </div>
+      <div className="fixed top-16 left-4 z-9999 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-2 shadow-lg">
+        <ThemeToggle />
+      </div>
+
+      <div className="fixed bottom-6 right-6 z-[9999]">
+        <button
+          onClick={() => setChatOpen((o) => !o)}
+          className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-neutral-800 border dark:border-neutral-700 shadow-lg hover:bg-slate-50 dark:hover:bg-neutral-700 transition-colors"
+        >
+          <MessageCircle
+            size={18}
+            className="text-slate-600 dark:text-gray-300"
+          />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <ChatPanel
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        messages={messages}
+        currentUserId={currentUserId}
+        onSend={socket.sendChatMessage}
+        onReaction={(messageId, emoji) => {
+          socket.sendReaction(messageId, emoji);
+        }}
+      />
 
       <Application
         key={theme}
@@ -306,4 +376,4 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
       </Application>
     </>
   );
-}
+})
