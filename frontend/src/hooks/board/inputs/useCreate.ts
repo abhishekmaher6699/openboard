@@ -26,39 +26,26 @@ export function useCreate({
   disabledRef.current = disabled
 
   useEffect(() => {
-
-    if (disabled) return 
+    if (disabled) return
 
     const viewport = viewportRef.current
     if (!viewport) return
 
     const interaction = interactionRef?.current
+
     let lastUpTime = 0
-
-    const up = (e: any) => {
-      // ignore if editor is open
-      if (interaction?.isEditing) return
-      if (disabledRef.current) return 
-
-      if (e.target !== viewport) return
-
-      const now = Date.now()
-      const currentTool = toolRef.current
-
-      if (now - lastUpTime < 300 && currentTool === "select") {
-        lastUpTime = 0
-        const pos = viewport.toWorld(e.global)
-        onTextCreateRef.current?.(pos.x - 100, pos.y - 40)
-        return
-      }
-
-      lastUpTime = now
-    }
+    let pointerDownPos: { x: number; y: number } | null = null
+    let activePointers = 0
 
     const down = (e: any) => {
-      // ignore if editor is open
       if (interaction?.isEditing) return
-      if (disabledRef.current) return 
+      if (disabledRef.current) return
+
+      activePointers++
+      pointerDownPos = { x: e.global.x, y: e.global.y }
+
+      // ignore multi-touch (pinch)
+      if (activePointers > 1) return
 
       const currentTool = toolRef.current
 
@@ -76,12 +63,55 @@ export function useCreate({
       onToolChange?.("select")
     }
 
+    const up = (e: any) => {
+      if (interaction?.isEditing) return
+      if (disabledRef.current) return
+
+      activePointers = Math.max(0, activePointers - 1)
+
+      // ignore if other fingers still down (pinch end)
+      if (activePointers > 0) return
+
+      if (e.target !== viewport) return
+
+      // ignore if finger moved too much (pan, not tap)
+      if (pointerDownPos) {
+        const dx = Math.abs(e.global.x - pointerDownPos.x)
+        const dy = Math.abs(e.global.y - pointerDownPos.y)
+        if (dx > 10 || dy > 10) {
+          pointerDownPos = null
+          lastUpTime = 0
+          return
+        }
+      }
+      pointerDownPos = null
+
+      const now = Date.now()
+      const currentTool = toolRef.current
+
+      if (now - lastUpTime < 300 && currentTool === "select") {
+        lastUpTime = 0
+        const pos = viewport.toWorld(e.global)
+        onTextCreateRef.current?.(pos.x - 100, pos.y - 40)
+        return
+      }
+
+      lastUpTime = now
+    }
+
+    const cancel = () => {
+      activePointers = 0
+      pointerDownPos = null
+    }
+
     viewport.on("pointerdown", down)
     viewport.on("pointerup", up)
+    viewport.on("pointercancel", cancel)
 
     return () => {
       viewport.off("pointerdown", down)
       viewport.off("pointerup", up)
+      viewport.off("pointercancel", cancel)
     }
   }, [])
 }

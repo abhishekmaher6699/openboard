@@ -50,17 +50,12 @@ class BoardConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-        print(f"✅ CONNECTED: {self.channel_name} | board: {self.board_id}")
-        print(f"📡 Active users in board: {len(_active_users.get(self.board_id, {}))}")
-
-        print("CONNECTED:", self.channel_name)
-
         if self.user and self.user.is_authenticated:
             stacks = get_user_stacks(self.board_id, self.user.id)
             if not stacks["undo"]:
                 stacks["undo"] = await load_user_undo_stack(self.board_id, self.user.id)
 
-            # Register user as active
+            # Register FIRST
             if self.board_id not in _active_users:
                 _active_users[self.board_id] = {}
             _active_users[self.board_id][self.channel_name] = {
@@ -68,13 +63,13 @@ class BoardConsumer(AsyncWebsocketConsumer):
                 "username": self.user.username,
             }
 
-            # Send current user list to the joining user
+            # Send ALL users including self — frontend deduplicates
             await self.send(text_data=json.dumps({
                 "type": "presence_init",
                 "users": get_active_users(self.board_id),
             }))
 
-            # Broadcast join to everyone else
+            # Broadcast join to others only
             await self.channel_layer.group_send(
                 self.group_name,
                 {
@@ -86,6 +81,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
                     "sender_channel": self.channel_name,
                 }
             )
+
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)

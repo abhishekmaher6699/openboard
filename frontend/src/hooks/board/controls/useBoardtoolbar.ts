@@ -124,6 +124,7 @@ export function useBoardToolbar({
   };
 
   const handleDelete = () => {
+     console.log("🗑️ handleDelete called, selectedIds:", selectedIds);
     if (selectedIds.length === 1) deleteObject(selectedIds[0]);
     else if (selectedIds.length > 1) deleteManyObjects(selectedIds);
     clearSelectionRef.current?.();

@@ -88,16 +88,18 @@ export default function BoardCanvas({
 
   drawSelectionRef.current = drawSelection;
 
-  // expose clearSelection to PixiBoard via ref
-  if (clearSelectionRef) {
-    clearSelectionRef.current = () => {
-      const interaction = interactionRef.current;
-      interaction.selected = new Set();
-      if (interaction.selectionGraphics)
-        interaction.selectionGraphics.visible = false;
-      drawSelectionRef.current(new Set());
-    };
-  }
+if (clearSelectionRef) {
+  clearSelectionRef.current = () => {
+    console.log("🧹 clearSelectionRef called");
+    const interaction = interactionRef.current;
+    interaction.selected = new Set();
+    if (interaction.selectionGraphics)
+      interaction.selectionGraphics.visible = false;
+    drawSelectionRef.current(new Set());
+    console.log("📣 calling onSelectionChange([])");
+    onSelectionChange?.([]);
+  };
+}
 
   // disable all interactions in preview mode — pan/zoom still works via viewport
   useDrag({

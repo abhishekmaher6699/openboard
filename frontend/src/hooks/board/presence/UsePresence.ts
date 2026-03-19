@@ -47,14 +47,25 @@ export function usePresence({
 
   useEffect(() => {
     const unregister = onMessage((data) => {
-      if (data.type === "presence_init") {
-        console.log("presence init received, setting users")
-        setUsers(data.users.map((u: PresenceUser) => ({ ...u, cursor: null })));
-        return true;
-      }
+        if (data.type === "presence_init") {
+            console.log("presence_init users:", data.users);
+            const seen = new Set();
+            const unique = data.users.filter((u: PresenceUser) => {
+                if (seen.has(u.user_id)) return false;
+                seen.add(u.user_id);
+                return true;
+            });
+            setUsers(unique.map((u: PresenceUser) => ({ ...u, cursor: null })));
+            return true;
+            }
 
       if (data.type === "user_joined") {
+        console.log("user_joined:", data.user);
         setUsers((prev) => {
+          console.log(
+            "current users before join:",
+            prev.map((u) => u.user_id),
+          );
           if (prev.some((u) => u.user_id === data.user.user_id)) return prev;
           return [...prev, { ...data.user, cursor: null }];
         });
@@ -78,6 +89,11 @@ export function usePresence({
       }
 
       if (data.type === "selection_update") {
+        console.log(
+          "👥 remote selection_update received:",
+          data.user_id,
+          data.selected_ids,
+        );
         setUsers((prev) =>
           prev.map((u) =>
             u.user_id === data.user_id

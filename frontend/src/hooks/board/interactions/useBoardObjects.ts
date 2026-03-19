@@ -68,7 +68,7 @@ export function useBoardObjects({
     setObjects((prev) => prev.map((o) => (o.id === id ? { ...o, x, y } : o)));
     try {
       sendUpdate(id, { x, y }, "move_shape", diff);
-      await updateObject(boardId, id, { x, y });
+      updateObject(boardId, id, { x, y });
     } catch (err) {
       console.error("Move failed", err);
     }
@@ -97,7 +97,7 @@ export function useBoardObjects({
     );
     try {
       sendManyMoves(moves, diff);
-      await Promise.all(
+      Promise.all(
         moves.map((m) => updateObject(boardId, m.id, { x: m.x, y: m.y })),
       );
     } catch (err) {
@@ -157,7 +157,7 @@ export function useBoardObjects({
     );
     try {
       sendUpdate(id, { width, height, x, y }, "resize_shape", diff);
-      await updateObject(boardId, id, { width, height, x, y });
+      updateObject(boardId, id, { width, height, x, y });
     } catch (err) {
       console.error("Resize failed", err);
     }
@@ -196,7 +196,7 @@ export function useBoardObjects({
     );
     try {
       sendResizeMany(resizes, diff);
-      await Promise.all(
+      Promise.all(
         resizes.map((r) =>
           updateObject(boardId, r.id, {
             x: r.x,
@@ -241,7 +241,7 @@ export function useBoardObjects({
     );
 
     try {
-      await Promise.all(
+      Promise.all(
         ids.map((id) => {
           const existing =
             objectsRef.current.find((o) => o.id === id)?.data ?? {};

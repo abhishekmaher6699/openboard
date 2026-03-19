@@ -27,9 +27,9 @@ import { useTheme } from "../../../context/theme-context";
 import ThemeToggle from "../../ui/ThemeToggle";
 
 export default memo(function PixiBoard({ boardId }: { boardId: string }) {
-   console.log("PixiBoard render", boardId);
+  //  console.log("PixiBoard render", boardId);
   const { theme } = useTheme();
-  console.log("useTheme value:", theme);
+  // console.log("useTheme value:", theme);
   const isDark = theme === "dark";
 
   const [objects, setObjects] = useState<BoardObject[]>([]);
@@ -58,20 +58,6 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
   const [unreadCount, setUnreadCount] = useState(0);
 
 
-  const renderCount = useRef(0);
-  renderCount.current++;
-  console.log(`PixiBoard render #${renderCount.current}`, {
-    theme,
-    isDark,
-    objects: objects.length,
-    tool,
-    color,
-    selectedIds,
-    activityPanelOpen,
-    chatOpen,
-    unreadCount,
-    strokeWidth,
-  });
 
   const viewportRef = useRef<any>(null);
   const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
@@ -94,7 +80,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
       isFirstRender.current = false;
       return;
     }
-    if (!chatOpen) setUnreadCount((c) => c + 1);
+    // if (!chatOpen) setUnreadCount((c) => c + 1);
   }, [messages]);
 
   useEffect(() => {
@@ -215,15 +201,10 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
   }, [isPreviewMode]);
 
   useEffect(() => {
+    console.log("📡 selectedIds changed:", selectedIds);
     const ws = socket.socketRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
-    ws.send(
-      JSON.stringify({
-        type: "selection_update",
-        selected_ids: selectedIds,
-      }),
-    );
+    ws.send(JSON.stringify({ type: "selection_update", selected_ids: selectedIds }));
   }, [selectedIds]);
 
   useEffect(() => {
@@ -316,7 +297,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
         <ThemeToggle />
       </div>
 
-      <div className="fixed bottom-6 right-6 z-[9999]">
+      <div className="fixed bottom-15 right-6 z-[9999]">
         <button
           onClick={() => setChatOpen((o) => !o)}
           className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-neutral-800 border dark:border-neutral-700 shadow-lg hover:bg-slate-50 dark:hover:bg-neutral-700 transition-colors"
