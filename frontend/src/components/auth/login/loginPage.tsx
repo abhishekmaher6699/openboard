@@ -1,7 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 
-import { login, getMe } from "../../../api/auth-funcs";
+import { login, getMe } from "../../../api/auth";
 import type { LoginInput } from "../../../types/auth";
 
 import AuthCard from "../utils/authCard";

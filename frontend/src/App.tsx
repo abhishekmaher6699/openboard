@@ -7,7 +7,7 @@ import ProtectedRoute from "./context/ProtectedRoute";
 import BoardGrid from "./components/dashboard/boards/BoardGrid";
 import ProfilePage from "./components/dashboard/profile/profilePage";
 import SettingsPage from "./components/dashboard/settings/settingsPage";
-import BoardPage from "./components/drawBoard/BoardPage";
+import BoardPage from "./components/drawBoard/canvas/BoardPage";
 
 function App() {
   return (

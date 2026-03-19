@@ -10,7 +10,7 @@ import {
 } from "../../ui/dropdown-menu";
 
 import ConfirmDialog from "../../ui/ConfirmDialog";
-import type {BoardMenuProps } from "../../../types/board";
+import type {BoardMenuProps } from "../../../types/dashboard";
 import { toast } from "sonner";
 
 export default function BoardMenu({

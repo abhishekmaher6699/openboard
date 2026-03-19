@@ -1,6 +1,6 @@
 import { useAuth } from "../../../context/auth-context";
 import { useState } from "react";
-import { updateUser } from "../../../api/auth-funcs";
+import { updateUser } from "../../../api/auth";
 import { toast } from "sonner";
 
 export default function ProfilePage() {

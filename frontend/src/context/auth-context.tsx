@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react"
-import { getMe, logout as LogoutApi } from "../api/auth-funcs"
+import { getMe, logout as LogoutApi } from "../api/auth"
 import type { User } from "../types/auth"
 
 type AuthContextType = {

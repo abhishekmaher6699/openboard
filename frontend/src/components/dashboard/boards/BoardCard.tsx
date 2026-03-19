@@ -1,4 +1,4 @@
-import type { BoardCardProps } from "../../../types/board";
+import type { BoardCardProps } from "../../../types/dashboard";
 import BoardMenu from "./BoardMenu";
 
 const colors = [

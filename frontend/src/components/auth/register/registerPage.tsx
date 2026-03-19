@@ -1,7 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 
-import { register, getMe } from "../../../api/auth-funcs";
+import { register, getMe } from "../../../api/auth";
 import type { RegisterInput } from "../../../types/auth";
 
 import AuthCard from "../utils/authCard";

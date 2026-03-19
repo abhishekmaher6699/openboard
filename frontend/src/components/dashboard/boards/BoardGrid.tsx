@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { deleteBoard, getBoards, leaveBoard } from "../../../api/board";
-import type { Board } from "../../../types/board";
+import type { Board } from "../../../types/dashboard";
 import { useAuth } from "../../../context/auth-context";
 
 import Boardcard from "./BoardCard";

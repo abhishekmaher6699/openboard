@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createBoard, joinBoard } from "../../../api/board";
-import type { ControlProps } from "../../../types/board";
+import type { ControlProps } from "../../../types/dashboard";
 
 import { Button } from "../../../components/ui/button";
 import {
