@@ -21,6 +21,8 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   const [color, setColor] = useState("#ff0000");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
+  const [strokeWidth, setStrokeWidth] = useState(3);
+
 
   const viewportRef = useRef<any>(null);
   const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
@@ -190,6 +192,9 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         activityOpen={activityPanelOpen}
         onUndo={socket.sendUndo}
         onRedo={socket.sendRedo}
+        strokeWidth={strokeWidth}
+        setStrokeWidth={setStrokeWidth}
+
       />
 
       <FloatingToolbar
@@ -247,6 +252,8 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
           objectMapRef={objectMapRef}
           clearSelectionRef={clearSelectionRef}
           previewMode={isPreviewMode}
+          color = {isPreviewMode ? "#ff0000" : color}
+          strokeWidth={strokeWidth}
         />
       </Application>
     </>

@@ -42,7 +42,7 @@ export default function ActivityPanel({
 
   return (
     <div
-      className={`fixed top-0 right-0 h-screen w-80 bg-white border-l border-slate-200 flex flex-col z-9998 transition-transform duration-250 ${
+      className={`fixed top-0 right-0 h-screen w-80 bg-white border-l border-slate-200 flex flex-col z-10000 transition-transform duration-250 ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
       style={{ boxShadow: isOpen ? "-4px 0 16px rgba(0,0,0,0.08)" : "none" }}

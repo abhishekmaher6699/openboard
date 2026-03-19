@@ -11,10 +11,9 @@ import { useTextEdit } from "../../../hooks/board/interactions/useTextEdit";
 import { useCreate } from "../../../hooks/board/inputs/useCreate";
 import { useDelete } from "../../../hooks/board/inputs/useDelete";
 import { useBoardInteraction } from "../../../hooks/board/canvas/useInteractionStore";
-import type {BoardCanvasProps,  DrawSelectionFn} from "../../../types/canvas";
+import type { BoardCanvasProps, DrawSelectionFn } from "../../../types/canvas";
 import type { BoardObject, Tool } from "../../../types/board";
-
-
+import { usePen } from "../../../hooks/board/interactions/usePen";
 
 export default function BoardCanvas({
   objects,
@@ -34,20 +33,24 @@ export default function BoardCanvas({
   objectMapRef: externalObjectMapRef,
   clearSelectionRef,
   previewMode,
+  color,
+  strokeWidth
 }: BoardCanvasProps) {
   const { app } = useApplication();
 
-  const { viewportRef, itemsLayerRef, overlayLayerRef } = useViewport(app, externalViewportRef);
+  const { viewportRef, itemsLayerRef, overlayLayerRef } = useViewport(
+    app,
+    externalViewportRef,
+  );
   const interactionRef = useBoardInteraction();
   const objectsRef = useRef<any[]>([]);
   const internalObjectMapRef = useRef<Map<string, BoardObject>>(new Map());
   const objectMapRef = externalObjectMapRef ?? internalObjectMapRef;
   const drawSelectionRef = useRef<DrawSelectionFn>(() => {});
 
-
   useEffect(() => {
-    objectMapRef.current = new Map(objects.map(o => [o.id, o]))
-  }, [objects])
+    objectMapRef.current = new Map(objects.map((o) => [o.id, o]));
+  }, [objects]);
 
   const toolRef = useRef<Tool>(tool);
   toolRef.current = tool;
@@ -58,7 +61,7 @@ export default function BoardCanvas({
     objectMapRef,
     onTextChange,
     onToolChange: setTool,
-    disabled: previewMode
+    disabled: previewMode,
   });
 
   const { attachHandles } = useResize({
@@ -68,7 +71,7 @@ export default function BoardCanvas({
     onResize,
     drawSelectionRef,
     onResizeMany,
-    disabled: previewMode
+    disabled: previewMode,
   });
 
   const { drawSelection } = useSelection({
@@ -80,7 +83,7 @@ export default function BoardCanvas({
     attachHandles,
     onSelectionChange,
     onToolbarUpdate,
-    disabled: previewMode
+    disabled: previewMode,
   });
 
   drawSelectionRef.current = drawSelection;
@@ -88,11 +91,12 @@ export default function BoardCanvas({
   // expose clearSelection to PixiBoard via ref
   if (clearSelectionRef) {
     clearSelectionRef.current = () => {
-      const interaction = interactionRef.current
-      interaction.selected = new Set()
-      if (interaction.selectionGraphics) interaction.selectionGraphics.visible = false
-      drawSelectionRef.current(new Set())
-    }
+      const interaction = interactionRef.current;
+      interaction.selected = new Set();
+      if (interaction.selectionGraphics)
+        interaction.selectionGraphics.visible = false;
+      drawSelectionRef.current(new Set());
+    };
   }
 
   // disable all interactions in preview mode — pan/zoom still works via viewport
@@ -104,7 +108,7 @@ export default function BoardCanvas({
     onMove,
     onManyMove,
     drawSelectionRef,
-    disabled: previewMode
+    disabled: previewMode,
   });
 
   useShapeRenderer({
@@ -117,7 +121,7 @@ export default function BoardCanvas({
     drawSelectionRef,
     toolRef,
     onTextOpen: openEditor,
-    disabled: previewMode
+    disabled: previewMode,
   });
 
   useMarquee({
@@ -126,10 +130,10 @@ export default function BoardCanvas({
     interactionRef,
     objectsRef,
     drawSelectionRef,
-    disabled: previewMode
+    disabled: previewMode,
   });
 
- useCreate({
+  useCreate({
     viewportRef,
     tool,
     onCreate,
@@ -147,7 +151,18 @@ export default function BoardCanvas({
       };
       waitForObj();
     },
-    disabled: previewMode
+    disabled: previewMode,
+  });
+
+  usePen({
+    viewportRef,
+    itemsLayerRef,
+    interactionRef,
+    tool,
+    color,
+    strokeWidth,
+    onCreate,
+    disabled: previewMode,
   });
 
   useDelete({
@@ -156,7 +171,9 @@ export default function BoardCanvas({
     onManyDelete,
     disabled: previewMode,
     clearSelectionRef,
-    hideToolbar: onToolbarUpdate ? () => onToolbarUpdate(new Set(), undefined) : undefined,
+    hideToolbar: onToolbarUpdate
+      ? () => onToolbarUpdate(new Set(), undefined)
+      : undefined,
   });
 
   return null;

@@ -29,23 +29,24 @@ export function useBoardObjects({
     type: string,
     x: number,
     y: number,
+    extraData?: Record<string, any>,
   ): Promise<string | null> => {
     const fill = color.replace("#", "0x");
     const maxZ = Math.max(0, ...objectsRef.current.map((o) => o.z_index ?? 0));
     const defaultFill = type === "sticky" ? "0xffd700" : fill;
+
     const newObject = {
       type,
       x,
       y,
-      width: 200,
-      height: type === "text" ? 80 : 120,
+      width: extraData?.width ?? (type === "text" ? 200 : 200),
+      height: extraData?.height ?? (type === "text" ? 80 : 120),
       z_index: maxZ + 1000,
-      data: { fill: defaultFill, text: "" },
+      data: extraData ?? { fill: defaultFill, text: "" },
     };
     try {
       const created = await createObject(boardId, newObject);
       setObjects((prev) => [...prev, created]);
-      // diff: we created this object, inverse would be to delete it
       sendCreate(created, { type: "create", object: created });
       return created.id;
     } catch (err) {

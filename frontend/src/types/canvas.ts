@@ -29,6 +29,8 @@ export type BoardCanvasProps = {
   objectMapRef?: React.RefObject<Map<string, BoardObject>>
   clearSelectionRef?: React.RefObject<() => void>
   previewMode?: boolean
+  color: string
+  strokeWidth: number
 }
 
 export type BoardInteraction = {

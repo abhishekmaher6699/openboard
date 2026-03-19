@@ -6,6 +6,7 @@ export type Tool =
   | "triangle"
   | "diamond"
   | "text"
+  | "pen"
 
 export type BoardObject = {
   id: string
@@ -83,6 +84,8 @@ export type BoardControlsProps = {
   setTool: React.Dispatch<React.SetStateAction<Tool>>;
   color: string;
   setColor: (color: string) => void;
+  strokeWidth: number;
+  setStrokeWidth: (width: number) => void;
   onToggleActivity: () => void;
   activityOpen: boolean;
   onUndo: () => void;
