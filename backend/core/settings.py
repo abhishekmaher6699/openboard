@@ -101,8 +101,12 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "board",
+        "USER": "board",
+        "PASSWORD": "board",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
     }
 }
 
@@ -155,3 +159,22 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "logs/board.log",
+        },
+    },
+    "loggers": {
+        "board": {
+            "handlers": ["file"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}

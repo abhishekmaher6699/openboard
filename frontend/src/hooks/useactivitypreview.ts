@@ -9,7 +9,7 @@ export function useActivityPreview() {
   }>({ active: false, objects: [], label: "" });
 
 const enterPreview = useCallback((snapshot: BoardObject[], label: string) => {
-  console.log("enterPreview called", { snapshot_len: snapshot.length, label });
+  // console.log("enterPreview called", { snapshot_len: snapshot.length, label });
   setPreview({ active: true, objects: snapshot, label });
 }, []);
 

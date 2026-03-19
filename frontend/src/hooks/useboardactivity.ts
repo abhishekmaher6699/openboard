@@ -5,7 +5,7 @@ import type { BoardActivity } from "../types/board";
 const ACTIVITY_LIMIT = 50;
 
 export function useBoardActivity(boardId: string, currentUserId: number | null) {
-  console.log("useBoardActivity render, currentUserId:", currentUserId);
+  // console.log("useBoardActivity render, currentUserId:", currentUserId);
   const [activities, setActivities] = useState<BoardActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);

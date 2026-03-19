@@ -3,6 +3,10 @@ from channels.db import database_sync_to_async
 from django.db import transaction
 from django.db.models import Max
 import json
+import logging
+
+logger = logging.getLogger("board.consumer")
+
 
 _undo_stacks: dict = {}
 
@@ -33,11 +37,15 @@ class BoardConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive(self, text_data):
+
         data = json.loads(text_data)
+        user = self.scope.get("user")
+
+        logger.debug(f"receive: type={data.get('type')} user={user} is_authenticated={getattr(user, 'is_authenticated', False)}")
+
         if "type" not in data:
             return
 
-        user = self.scope.get("user")
 
         if data["type"] == "undo":
             if not user or not user.is_authenticated:
@@ -54,7 +62,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
                 stacks["undo"].append(stacks["redo"].pop())
                 return
 
-            # cursor_sequence = sequence of the entry BEFORE the one we just undid
+            # uence = sequence of the entry BEFORE the one we just undid
             # i.e. the top of the undo stack after popping
             cursor_sequence = stacks["undo"][-1]["sequence"] if stacks["undo"] else 0
 
@@ -143,9 +151,9 @@ class BoardConsumer(AsyncWebsocketConsumer):
                         for uid in _undo_stacks[self.board_id]:
                             _undo_stacks[self.board_id][uid]["redo"] = []
                     
-                    print("cursor_seq:", cursor_seq)
-                    print("deleted_ids:", deleted_ids)
-                    print("undo stack after purge:", [(e["activity_id"], e["sequence"]) for e in stacks["undo"]])
+                    logger.debug("cursor_seq:", cursor_seq)
+                    logger.debug("deleted_ids:", deleted_ids)
+                    logger.debug("undo stack after purge:", [(e["activity_id"], e["sequence"]) for e in stacks["undo"]])
 
                 activity = await self.save_activity(data, user, diff)
                 if activity:

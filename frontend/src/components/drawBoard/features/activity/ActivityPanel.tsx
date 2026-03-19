@@ -121,7 +121,7 @@ export default function ActivityPanel({
     });
   };
 
-  console.log(currentActivityId)
+  // console.log(currentActivityId)
   const isGroupActive = (group: BoardActivity[]) =>
     !activeSnapshot && group.some((a) => a.id === currentActivityId);
 

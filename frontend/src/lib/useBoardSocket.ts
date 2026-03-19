@@ -5,7 +5,7 @@ import { applyDiff } from "../lib/diffUtils";
 
 type Props = {
   boardId: string;
-  objectsRef: React.MutableRefObject<BoardObject[]>;
+  objectsRef: React.RefObject<BoardObject[]>;
   setObjects: React.Dispatch<React.SetStateAction<BoardObject[]>>;
   onActivity?: (activity: BoardActivity, deletedIds?: string[]) => void;
   onRestore?: (snapshot: BoardObject[]) => void;
@@ -31,6 +31,8 @@ export default function useBoardSocket({
   const onRedoAppliedRef = useRef(onRedoApplied);
   onRedoAppliedRef.current = onRedoApplied;
 
+  const pendingRef = useRef<object[]>([])
+
   const connect = () => {
     if (unmountedRef.current) return;
 
@@ -41,8 +43,13 @@ export default function useBoardSocket({
     socket.onopen = () => {
       console.log("WS connected");
       reconnectAttemptsRef.current = 0;
+
+      pendingRef.current.forEach(msg => socket.send(JSON.stringify(msg)))
+      pendingRef.current = []
     };
+
     socket.onerror = (err) => console.error("WS error", err);
+    
     socket.onclose = () => {
       if (unmountedRef.current) return;
       const delay = Math.min(1000 * 2 ** reconnectAttemptsRef.current, 30000);
@@ -145,7 +152,15 @@ export default function useBoardSocket({
 
   const send = (payload: object) => {
     const socket = socketRef.current;
+
+    if (!socket || socket.readyState === WebSocket.CONNECTING) {
+      console.log("saved to pending", payload)
+      pendingRef.current.push(payload)
+      return
+    }
+
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    console.log("sending:", payload);
     socket.send(JSON.stringify(payload));
   };
 
