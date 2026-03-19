@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { BoardActivity, BoardObject } from "../types/board";
 import type { BoardDiff } from "../lib/diffUtils";
 import { applyDiff } from "../lib/diffUtils";
+import { getValidToken } from "../api/client";
 
 type Props = {
   boardId: string;
@@ -14,11 +15,18 @@ type Props = {
 };
 
 export default function useBoardSocket({
-  boardId, objectsRef, setObjects,
-  onActivity, onRestore, onUndoApplied, onRedoApplied,
+  boardId,
+  objectsRef,
+  setObjects,
+  onActivity,
+  onRestore,
+  onUndoApplied,
+  onRedoApplied,
 }: Props) {
   const socketRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const reconnectAttemptsRef = useRef(0);
   const unmountedRef = useRef(false);
 
@@ -31,25 +39,31 @@ export default function useBoardSocket({
   const onRedoAppliedRef = useRef(onRedoApplied);
   onRedoAppliedRef.current = onRedoApplied;
 
-  const pendingRef = useRef<object[]>([])
+  const pendingRef = useRef<object[]>([]);
 
-  const connect = () => {
+  const connect = async () => {
     if (unmountedRef.current) return;
 
-    const token = localStorage.getItem("access");
-    const socket = new WebSocket(`ws://localhost:8000/ws/board/${boardId}/?token=${token}`);
+    const token = await getValidToken();
+    if (!token) {
+      console.log("No valid token, cannot connect websocket");
+      return;
+    }
+    const socket = new WebSocket(
+      `ws://localhost:8000/ws/board/${boardId}/?token=${token}`,
+    );
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log("WS connected");
+      // console.log("WS connected");
       reconnectAttemptsRef.current = 0;
 
-      pendingRef.current.forEach(msg => socket.send(JSON.stringify(msg)))
-      pendingRef.current = []
+      pendingRef.current.forEach((msg) => socket.send(JSON.stringify(msg)));
+      pendingRef.current = [];
     };
 
     socket.onerror = (err) => console.error("WS error", err);
-    
+
     socket.onclose = () => {
       if (unmountedRef.current) return;
       const delay = Math.min(1000 * 2 ** reconnectAttemptsRef.current, 30000);
@@ -69,32 +83,36 @@ export default function useBoardSocket({
         onRestoreRef.current?.(data.snapshot, data.deleted_ids ?? []);
 
         if (data.activity) {
-          onActivityRef.current?.(data.activity, [])
+          onActivityRef.current?.(data.activity, []);
         }
         return;
       }
 
       if (data.type === "undo_applied") {
         const inv = data.inv_diff as BoardDiff;
-        console.log("ondo applied: ", JSON.stringify(inv))
-        setObjects(prev => applyDiff(prev, inv));
+        // console.log("undo applied: ", JSON.stringify(inv));
+        setObjects((prev) => applyDiff(prev, inv));
         onUndoAppliedRef.current?.(data.cursor_sequence ?? 0, data.user_id);
         return;
       }
 
       if (data.type === "redo_applied") {
         const diff = data.diff as BoardDiff;
-        setObjects(prev => applyDiff(prev, diff));
+        setObjects((prev) => applyDiff(prev, diff));
         onRedoAppliedRef.current?.(data.cursor_sequence ?? 0, data.user_id);
         return;
       }
 
       const SINGLE_OBJECT_UPDATE_TYPES = new Set([
-        "update_object", "move_shape", "resize_shape",
-        "update_color", "update_text", "bring_forward",
-        "send_back", "bring_to_front", "send_to_back",
-        "bold_text", "italic_text", "font_size",
-        "align_text", "font_family", "text_color",
+        "update_object",
+        "move_shape",
+        "resize_shape",
+        "update_color",
+        "update_text",
+        "bring_forward",
+        "send_back",
+        "bring_to_front",
+        "send_to_back",
       ]);
 
       if (SINGLE_OBJECT_UPDATE_TYPES.has(data.type)) {
@@ -103,10 +121,42 @@ export default function useBoardSocket({
             if (obj.id !== data.id) return obj;
             const changes = data.changes;
             if (changes.data) {
-              return { ...obj, ...changes, data: { ...obj.data, ...changes.data } };
+              return {
+                ...obj,
+                ...changes,
+                data: { ...obj.data, ...changes.data },
+              };
             }
             return { ...obj, ...changes };
-          })
+          }),
+        );
+      }
+
+      const MANY_UPDATE_TYPES = new Set([
+        "update_color_many",
+        "bold_text",
+        "italic_text",
+        "font_size",
+        "align_text",
+        "font_family",
+        "text_color",
+      ]);
+
+      if (MANY_UPDATE_TYPES.has(data.type)) {
+        setObjects((prev) =>
+          prev.map((obj) => {
+            const u = data.updates?.find((u: any) => u.id === obj.id);
+            if (!u) return obj;
+            const changes = u.changes;
+            if (changes.data) {
+              return {
+                ...obj,
+                ...changes,
+                data: { ...obj.data, ...changes.data },
+              };
+            }
+            return { ...obj, ...changes };
+          }),
         );
       }
 
@@ -115,7 +165,7 @@ export default function useBoardSocket({
           prev.map((obj) => {
             const move = data.moves.find((m: any) => m.id === obj.id);
             return move ? { ...obj, x: move.x, y: move.y } : obj;
-          })
+          }),
         );
       }
 
@@ -123,8 +173,10 @@ export default function useBoardSocket({
         setObjects((prev) =>
           prev.map((obj) => {
             const r = data.resizes.find((r: any) => r.id === obj.id);
-            return r ? { ...obj, x: r.x, y: r.y, width: r.width, height: r.height } : obj;
-          })
+            return r
+              ? { ...obj, x: r.x, y: r.y, width: r.width, height: r.height }
+              : obj;
+          }),
         );
       }
 
@@ -138,15 +190,17 @@ export default function useBoardSocket({
 
       if (data.type === "create_many") {
         setObjects((prev) => {
-          const existingIds = new Set(prev.map(o => o.id));
-          const newObjects = (data.objects as BoardObject[]).filter(o => !existingIds.has(o.id));
+          const existingIds = new Set(prev.map((o) => o.id));
+          const newObjects = (data.objects as BoardObject[]).filter(
+            (o) => !existingIds.has(o.id),
+          );
           return [...prev, ...newObjects];
         });
       }
 
       if (data.type === "create_shape") {
         setObjects((prev) => {
-          if (prev.some(o => o.id === data.object.id)) return prev;
+          if (prev.some((o) => o.id === data.object.id)) return prev;
           return [...prev, data.object];
         });
       }
@@ -155,10 +209,11 @@ export default function useBoardSocket({
 
   useEffect(() => {
     unmountedRef.current = false;
-    connect();
+    connect(); // async, fine to call without await here
     return () => {
       unmountedRef.current = true;
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (reconnectTimeoutRef.current)
+        clearTimeout(reconnectTimeoutRef.current);
       socketRef.current?.close();
     };
   }, [boardId]);
@@ -167,9 +222,9 @@ export default function useBoardSocket({
     const socket = socketRef.current;
 
     if (!socket || socket.readyState === WebSocket.CONNECTING) {
-      console.log("saved to pending", payload)
-      pendingRef.current.push(payload)
-      return
+      console.log("saved to pending", payload);
+      pendingRef.current.push(payload);
+      return;
     }
 
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
@@ -181,14 +236,30 @@ export default function useBoardSocket({
     id: string,
     changes: Partial<BoardObject> & { data?: Record<string, any> },
     actionType: string = "update_object",
-    diff?: BoardDiff
+    diff?: BoardDiff,
   ) => send({ type: actionType, id, changes, diff });
 
-  const sendManyMoves = (moves: { id: string; x: number; y: number }[], diff: BoardDiff) =>
-    send({ type: "move_many", moves, diff });
+  const sendUpdateMany = (
+    updates: { id: string; changes: Record<string, any> }[],
+    actionType: string,
+    diff: BoardDiff,
+  ) => send({ type: actionType, updates, diff });
 
-  const sendResizeMany = (resizes: { id: string; width: number; height: number; x: number; y: number }[], diff: BoardDiff) =>
-    send({ type: "resize_many", resizes, diff });
+  const sendManyMoves = (
+    moves: { id: string; x: number; y: number }[],
+    diff: BoardDiff,
+  ) => send({ type: "move_many", moves, diff });
+
+  const sendResizeMany = (
+    resizes: {
+      id: string;
+      width: number;
+      height: number;
+      x: number;
+      y: number;
+    }[],
+    diff: BoardDiff,
+  ) => send({ type: "resize_many", resizes, diff });
 
   const sendDelete = (id: string, diff: BoardDiff) =>
     send({ type: "delete_shape", id, diff });
@@ -200,13 +271,14 @@ export default function useBoardSocket({
     send({ type: "create_shape", object, diff });
 
   const sendRestoreSnapshot = (snap: BoardObject[], sequence: number) =>
-    send({ type: "restore_snapshot", snapshot: snap, sequence});
+    send({ type: "restore_snapshot", snapshot: snap, sequence });
 
   const sendUndo = () => send({ type: "undo" });
   const sendRedo = () => send({ type: "redo" });
 
   return {
     sendUpdate,
+    sendUpdateMany,
     sendManyMoves,
     sendResizeMany,
     sendDelete,

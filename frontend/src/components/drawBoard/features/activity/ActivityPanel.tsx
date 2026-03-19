@@ -37,6 +37,7 @@ const ACTION_LABELS: Record<string, string> = {
   font_family: "changed font",
   text_color: "changed text color",
   restore: "restored the board",
+  update_color_many: "changed color",
 };
 
 function groupActivities(activities: BoardActivity[]) {
@@ -75,25 +76,6 @@ function formatDate(iso: string) {
   yesterday.setDate(today.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
-}
-
-function getSafeSnapshot(
-  group: BoardActivity[],
-  allGroups: BoardActivity[][],
-  groupIdx: number,
-): BoardObject[] | null {
-  for (let i = group.length - 1; i >= 0; i--) {
-    const snap = group[i].snapshot;
-    if (snap != null) return snap as BoardObject[];
-  }
-  for (let g = groupIdx - 1; g >= 0; g--) {
-    const grp = allGroups[g];
-    for (let i = grp.length - 1; i >= 0; i--) {
-      const snap = grp[i].snapshot;
-      if (snap != null) return snap as BoardObject[];
-    }
-  }
-  return null;
 }
 
 export default function ActivityPanel({
@@ -168,6 +150,18 @@ export default function ActivityPanel({
           const label = ACTION_LABELS[first.action_type] ?? "updated an object";
           const isActive = isGroupActive(group);
 
+          const affectedCount =
+            first.diff?.updates?.length ??
+            first.diff?.moves?.length ??
+            first.diff?.resizes?.length ??
+            first.diff?.objects?.length ??
+            null;
+
+          const labelWithCount =
+            affectedCount && affectedCount > 1
+              ? `${label} (${affectedCount} objects)`
+              : label;
+
           return (
             <div
               key={groupIdx}
@@ -203,15 +197,14 @@ export default function ActivityPanel({
                     <span className="font-medium">
                       {first.user?.username ?? "Unknown"}
                     </span>{" "}
-                    {isMultiple ? `${label} (×${group.length})` : label}
+                    {isMultiple
+                      ? `${labelWithCount} (×${group.length})`
+                      : labelWithCount}
                   </div>
                   <div className="text-[11px] text-gray-400 mt-0.5">
                     {formatDate(first.created_at)} ·{" "}
                     {formatTime(first.created_at)}
                   </div>
-                  {/* <div className="text-black">
-                    {first.id}
-                  </div> */}
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">

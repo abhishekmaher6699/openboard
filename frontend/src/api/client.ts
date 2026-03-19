@@ -79,3 +79,39 @@ export async function apiRequest<T>(
 
   return response.json();
 }
+
+
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
+export async function getValidToken(): Promise<string | null> {
+  let token = localStorage.getItem("access");
+  if (!token) return null;
+
+  if (isTokenExpired(token)) {
+    const refresh = localStorage.getItem("refresh");
+    if (!refresh) return null;
+
+    try {
+      const res = await fetch(`${API_URL}/auth/token/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      localStorage.setItem("access", data.access);
+      token = data.access;
+    } catch {
+      return null;
+    }
+  }
+
+  return token;
+}

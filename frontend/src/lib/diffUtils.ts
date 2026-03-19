@@ -50,7 +50,10 @@ export type CreateManyDiff = {
   type: "create_many"
   objects: BoardObject[]
 }
-
+export type UpdateManyDiff = {
+    type: "update_many"
+    updates: {id: string; from: Record<string, any>; to: Record<string, any>}[]
+}
 
 export type BoardDiff =
   | MoveDiff
@@ -62,6 +65,7 @@ export type BoardDiff =
   | DeleteManyDiff
   | CreateManyDiff
   | UpdateDiff
+  | UpdateManyDiff
 
 export function inverse(diff: BoardDiff): BoardDiff {
   switch (diff.type) {
@@ -89,6 +93,11 @@ export function inverse(diff: BoardDiff): BoardDiff {
       }
     case "update":
       return { type: "update", id: diff.id, from: diff.to, to: diff.from }
+    case "update_many":
+        return {
+            type: "update_many",
+            updates: diff.updates.map(u => ({id: u.id, from: u.to, to: u.from}))
+        }
   }
 }
 
@@ -136,6 +145,14 @@ export function applyDiff(objects: BoardObject[], diff: BoardDiff): BoardObject[
           : o.data
         return { ...o, ...diff.to, data: newData }
       })
+
+    case "update_many":
+        return objects.map(o => {
+            const u = diff.updates.find(u => u.id === o.id)
+            if (!u) return o
+            const newData = u.to.data ? { ...o.data, ...u.to.data } : o.data
+            return { ...o, ...u.to, data: newData }
+        })
 
     case "create_many": {
         const existingIds = new Set(objects.map(o => o.id))

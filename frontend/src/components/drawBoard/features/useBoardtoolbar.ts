@@ -10,9 +10,23 @@ type Props = {
   selectedIds: string[];
   objectsRef: React.RefObject<BoardObject[]>;
   setObjects: React.Dispatch<React.SetStateAction<BoardObject[]>>;
-  createNewObject: (type: string, x: number, y: number) => Promise<string | null>;
+  createNewObject: (
+    type: string,
+    x: number,
+    y: number,
+  ) => Promise<string | null>;
   sendCreate: (object: BoardObject, diff: BoardDiff) => void;
-  sendUpdate: (id: string, changes: any, actionType?: string, diff?: BoardDiff) => void;
+  sendUpdate: (
+    id: string,
+    changes: any,
+    actionType?: string,
+    diff?: BoardDiff,
+  ) => void;
+  sendUpdateMany: (
+    updates: { id: string; changes: Record<string, any> }[],
+    actionType: string,
+    diff: BoardDiff,
+  ) => void;
   deleteObject: (id: string) => void;
   deleteManyObjects: (ids: string[]) => void;
   clearSelectionRef: React.RefObject<() => void>;
@@ -26,6 +40,7 @@ export function useBoardToolbar({
   setObjects,
   sendCreate,
   sendUpdate,
+  sendUpdateMany,
   deleteObject,
   deleteManyObjects,
   clearSelectionRef,
@@ -42,7 +57,9 @@ export function useBoardToolbar({
       from: { z_index: obj?.z_index ?? 0 },
       to: { z_index: newZ },
     };
-    setObjects((prev) => prev.map((o) => (o.id === id ? { ...o, z_index: newZ } : o)));
+    setObjects((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, z_index: newZ } : o)),
+    );
     sendUpdate(id, { z_index: newZ }, actionType, diff);
     await updateObject(boardId, id, { z_index: newZ });
   };
@@ -57,8 +74,12 @@ export function useBoardToolbar({
       }),
     );
     // renormalize is internal bookkeeping — no diff needed, not undoable
-    updates.forEach((u) => sendUpdate(u.id, { z_index: u.z_index }, "update_object"));
-    await Promise.all(updates.map((u) => updateObject(boardId, u.id, { z_index: u.z_index })));
+    updates.forEach((u) =>
+      sendUpdate(u.id, { z_index: u.z_index }, "update_object"),
+    );
+    await Promise.all(
+      updates.map((u) => updateObject(boardId, u.id, { z_index: u.z_index })),
+    );
     return updates;
   };
 
@@ -157,50 +178,87 @@ export function useBoardToolbar({
     }
   };
 
+
+  const STYLE_DEFAULTS: Record<string, any> = {
+    bold: false,
+    italic: false,
+    align: "center",
+    fontSize: 16,
+    fontFamily: "sans-serif",
+    textColor: "#1a1a1a",
+  };
+
   const updateTextStyle = async (
     ids: string[],
     style: Record<string, any>,
     actionType: string,
   ) => {
-    setObjects((prev) =>
-      prev.map((obj) =>
-        ids.includes(obj.id) ? { ...obj, data: { ...obj.data, ...style } } : obj,
-      ),
-    );
-    ids.forEach((id) => {
+    const updates = ids.map((id) => {
       const obj = objectsRef.current.find((o) => o.id === id);
       const fromStyle: Record<string, any> = {};
-      Object.keys(style).forEach((k) => { fromStyle[k] = obj?.data?.[k]; });
-      const diff: BoardDiff = {
-        type: "update",
+      Object.keys(style).forEach((k) => {
+        const prev = obj?.data?.[k];
+        fromStyle[k] = prev !== undefined ? prev : (STYLE_DEFAULTS[k] ?? null);
+      });
+      return {
         id,
         from: { data: fromStyle },
         to: { data: style },
+        changes: { data: style },
       };
-      sendUpdate(id, { data: style }, actionType, diff);
     });
+
+    const diff: BoardDiff = {
+      type: "update_many",
+      updates: updates.map((u) => ({ id: u.id, from: u.from, to: u.to })),
+    };
+
+    sendUpdateMany(
+      updates.map((u) => ({ id: u.id, changes: u.changes })),
+      actionType,
+      diff,
+    );
+
+    setObjects((prev) =>
+      prev.map((obj) =>
+        ids.includes(obj.id)
+          ? { ...obj, data: { ...obj.data, ...style } }
+          : obj,
+      ),
+    );
+
     await Promise.all(
       ids.map((id) => {
-        const existing = objectsRef.current.find((o) => o.id === id)?.data ?? {};
+        const existing =
+          objectsRef.current.find((o) => o.id === id)?.data ?? {};
+        console.log("saving data:", { ...existing, ...style });
         return updateObject(boardId, id, { data: { ...existing, ...style } });
       }),
     );
   };
 
   const handleBold = () => {
-    const obj = objectsRef.current.find((o) => selectedIds.includes(o.id) && o.type === "text");
+    const obj = objectsRef.current.find(
+      (o) => selectedIds.includes(o.id) && o.type === "text",
+    );
     updateTextStyle(selectedIds, { bold: !obj?.data?.bold }, "bold_text");
   };
 
   const handleItalic = () => {
-    const obj = objectsRef.current.find((o) => selectedIds.includes(o.id) && o.type === "text");
+    const obj = objectsRef.current.find(
+      (o) => selectedIds.includes(o.id) && o.type === "text",
+    );
     updateTextStyle(selectedIds, { italic: !obj?.data?.italic }, "italic_text");
   };
 
-  const handleFontSize = (size: number) => updateTextStyle(selectedIds, { fontSize: size }, "font_size");
-  const handleAlign = (align: "left" | "center" | "right") => updateTextStyle(selectedIds, { align }, "align_text");
-  const handleFontFamily = (fontFamily: string) => updateTextStyle(selectedIds, { fontFamily }, "font_family");
-  const handleTextColor = (color: string) => updateTextStyle(selectedIds, { textColor: color }, "text_color");
+  const handleFontSize = (size: number) =>
+    updateTextStyle(selectedIds, { fontSize: size }, "font_size");
+  const handleAlign = (align: "left" | "center" | "right") =>
+    updateTextStyle(selectedIds, { align }, "align_text");
+  const handleFontFamily = (fontFamily: string) =>
+    updateTextStyle(selectedIds, { fontFamily }, "font_family");
+  const handleTextColor = (color: string) =>
+    updateTextStyle(selectedIds, { textColor: color }, "text_color");
 
   return {
     handleDelete,

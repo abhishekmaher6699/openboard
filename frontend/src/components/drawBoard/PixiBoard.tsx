@@ -135,6 +135,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     hideToolbar,
     sendCreate: socket.sendCreate,
     sendUpdate: socket.sendUpdate,
+    sendUpdateMany: socket.sendUpdateMany
   });
 
   useUndoRedo({

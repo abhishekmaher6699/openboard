@@ -161,7 +161,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
             "update_color", "update_text", "update_object",
             "bring_forward", "send_back", "bring_to_front", "send_to_back",
             "bold_text", "italic_text", "font_size", "align_text",
-            "font_family", "text_color",
+            "font_family", "text_color", "update_color_many",
         }
 
         if data["type"] in tracked:
@@ -309,6 +309,21 @@ class BoardConsumer(AsyncWebsocketConsumer):
                     BoardObject.objects.filter(board=board, id=diff["id"]).update(**from_data)
             return {"type": "update", "id": diff["id"], "from": diff["to"], "to": diff["from"]}
 
+        if diff_type == "update_many":
+            for u in diff["updates"]:
+                obj = BoardObject.objects.filter(board=board, id=u["id"]).first()
+                if obj:
+                    from_data = u["from"]
+                    if "data" in from_data:
+                        new_data = {**obj.data, **from_data["data"]}
+                        BoardObject.objects.filter(board=board, id=u["id"]).update(data=new_data)
+                    else:
+                        BoardObject.objects.filter(board=board, id=u["id"]).update(**from_data)
+            return {
+                "type": "update_many",
+                "updates": [{"id": u["id"], "from": u["to"], "to": u["from"]} for u in diff["updates"]]
+            }
+        
         return None
 
     @database_sync_to_async
@@ -382,6 +397,18 @@ class BoardConsumer(AsyncWebsocketConsumer):
                     BoardObject.objects.filter(board=board, id=diff["id"]).update(data=new_data)
                 else:
                     BoardObject.objects.filter(board=board, id=diff["id"]).update(**to_data)
+            return True
+        
+        if diff_type == "update_many":
+            for u in diff["updates"]:
+                obj = BoardObject.objects.filter(board=board, id=u["id"]).first()
+                if obj:
+                    from_data = u["to"]
+                    if "data" in from_data:
+                        new_data = {**obj.data, **from_data["data"]}
+                        BoardObject.objects.filter(board=board, id=u["id"]).update(data=new_data)
+                    else:
+                        BoardObject.objects.filter(board=board, id=u["id"]).update(**from_data)
             return True
 
         return False

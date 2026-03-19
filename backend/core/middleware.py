@@ -14,10 +14,11 @@ User = get_user_model()
 def get_user_from_token(token_key):
     try:
         token = AccessToken(token_key)
+        logger.debug(f"user token: {token}")
         user_id = token["user_id"]
         return User.objects.get(id=user_id)
     except Exception as e:
-        logger.debug("Failed to get user from token...", e)
+        logger.debug(f"Failed to get user from token: {e}")
         return AnonymousUser()
 
 class JWTAuthMiddleware(BaseMiddleware):
@@ -29,7 +30,7 @@ class JWTAuthMiddleware(BaseMiddleware):
         params = dict(p.split("=") for p in query_string.split("&") if "=" in p)
         token = params.get("token")
 
-        print(token)
+        # print(token)
         if token:
             scope["user"] = await get_user_from_token(token)
         else:

@@ -18,6 +18,7 @@ type Props = {
     actionType?: string,
     diff?: BoardDiff,
   ) => void;
+  sendUpdateMany: (updates: { id: string; changes: Record<string, any> }[], actionType: string, diff: BoardDiff) => void;
   sendManyMoves: (
     moves: { id: string; x: number; y: number }[],
     diff: BoardDiff,
@@ -43,6 +44,7 @@ export function useBoardObjects({
   objects,
   setObjects,
   sendUpdate,
+  sendUpdateMany,
   sendManyMoves,
   sendDelete,
   sendManyDelete,
@@ -239,28 +241,39 @@ export function useBoardObjects({
 
   const updateColor = async (ids: string[], newColor: string) => {
     const fill = newColor.replace("#", "0x");
-    ids.forEach((id) => {
+    const updates = ids.map((id) => {
       const obj = objectsRef.current.find((o) => o.id === id);
-      if (!obj) return;
-      // capture previous fill value
-      const diff: BoardDiff = {
-        type: "update",
+      return {
         id,
-        from: { data: { fill: obj.data?.fill } },
+        from: { data: { fill: obj?.data?.fill } },
         to: { data: { fill } },
+        changes: { data: { fill } },
       };
-      sendUpdate(id, { data: { fill } }, "update_color", diff);
     });
+
+    const diff: BoardDiff = {
+      type: "update_many",
+      updates: updates.map((u) => ({ id: u.id, from: u.from, to: u.to })),
+    };
+
+    sendUpdateMany(
+      updates.map((u) => ({ id: u.id, changes: u.changes })),
+      "update_color_many",
+      diff,
+    );
+
     setObjects((prev) =>
       prev.map((obj) =>
         ids.includes(obj.id) ? { ...obj, data: { ...obj.data, fill } } : obj,
       ),
     );
+
     try {
       await Promise.all(
         ids.map((id) => {
           const existing =
             objectsRef.current.find((o) => o.id === id)?.data ?? {};
+          console.log("saving data:", { ...existing, fill });
           return updateObject(boardId, id, { data: { ...existing, fill } });
         }),
       );
