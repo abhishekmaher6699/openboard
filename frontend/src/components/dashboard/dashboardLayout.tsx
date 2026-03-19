@@ -1,6 +1,7 @@
 import Sidebar from "./sidebar/Sidebar";
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
+import ThemeToggle from "../ui/ThemeToggle";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,6 +12,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:text-gray-100 flex">
+      <div className="fixed top-3 right-3 z-10001 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-2 shadow-lg">
+        <ThemeToggle />
+      </div>
 
       {/* Overlay */}
       {sidebarOpen && (
@@ -23,15 +27,16 @@ export default function Dashboard() {
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div className="flex-1 flex flex-col">
-
         {/* Mobile Topbar */}
-        <header className="
+        <header
+          className="
           lg:hidden
           flex items-center justify-between
           px-4 py-2
           bg-gray-200 dark:bg-neutral-950
           border-b border-black dark:border-gray-700
-        ">
+        "
+        >
           <button
             onClick={() => setSidebarOpen(true)}
             className="
@@ -51,15 +56,16 @@ export default function Dashboard() {
           <div />
         </header>
 
-        <main className="
+        <main
+          className="
           flex-1
           transition-all duration-200
           p-4 sm:p-6 lg:p-8
           bg-gray-200 dark:bg-neutral-900
-        ">
+        "
+        >
           <Outlet />
         </main>
-
       </div>
     </div>
   );

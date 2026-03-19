@@ -119,7 +119,7 @@ export default function FloatingToolbar({
               <select
                 value={textStyle.fontFamily ?? "sans-serif"}
                 onChange={(e) => onFontFamily(e.target.value)}
-                className="text-xs border border-slate-200 dark:border-neutral-700 rounded px-1 py-0.5 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200 max-w-[100px]"
+                className="text-xs border border-slate-200 dark:border-neutral-700 rounded px-1 py-0.5 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200 max-w-25"
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 {FONTS.map((f) => (
@@ -173,7 +173,7 @@ export default function FloatingToolbar({
               </ToolbarButton>
 
               {moreOpen && (
-                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg shadow-lg p-2 z-[10001] w-48">
+                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg shadow-lg p-2 z-10001 w-48">
 
                   <div className="mb-2">
                     <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">Font</p>
@@ -269,21 +269,3 @@ function Divider() {
   return <div className="w-px h-5 bg-slate-200 dark:bg-neutral-700 mx-0.5" />;
 }
 
-function Dropdown({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 z-[10001] w-36">
-      {children}
-    </div>
-  );
-}
-
-function MenuItem({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-neutral-700"
-    >
-      {label}
-    </button>
-  );
-}

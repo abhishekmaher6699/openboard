@@ -20,6 +20,7 @@ import BoardControls from "../controls/BoardControls";
 import RemoteSelections from "../presence/RemoteSelection";
 
 import { useTheme } from "../../../context/theme-context";
+import ThemeToggle from "../../ui/ThemeToggle";
 
 export default function PixiBoard({ boardId }: { boardId: string }) {
   const { theme } = useTheme();
@@ -268,6 +269,10 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         currentActivityId={isPreviewMode ? null : currentActivityId}
         exitPreview={exitPreview}
       />
+
+    <div className="fixed top-16 left-4 z-9999 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-2 shadow-lg">
+      <ThemeToggle />
+    </div>
 
       <Application
         key={theme}

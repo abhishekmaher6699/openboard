@@ -98,7 +98,7 @@ export default function RemoteCursors({
         return (
           <div
             key={user.user_id}
-            className="fixed pointer-events-none z-[9997]"
+            className="fixed pointer-events-none z-9997"
             style={{
               left: screenPos.x,
               top: screenPos.y,

@@ -11,6 +11,7 @@ import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { useAuth } from "../../../context/auth-context";
 import { toast } from "sonner";
+import ThemeToggle from "../../ui/ThemeToggle";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -38,11 +39,11 @@ const RegisterPage = () => {
 
       const user = await getMe();
       setUser(user);
-      
+
       navigate("/dashboard");
       toast.success("Account created successfully!");
     } catch (err: any) {
-       setError(err.detail || "Something went wrong")
+      setError(err.detail || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -50,6 +51,9 @@ const RegisterPage = () => {
 
   return (
     <AuthCard title="Create an Account">
+      <div className="fixed top-3 right-3 z-10001 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-2 shadow-lg">
+        <ThemeToggle />
+      </div>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="username">Username</Label>

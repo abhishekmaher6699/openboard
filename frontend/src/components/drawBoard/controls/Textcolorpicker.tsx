@@ -104,7 +104,7 @@ export default function TextColorPicker({ value, onChange }: TextColorPickerProp
       {open && rect && createPortal(
         <div
           ref={popoverRef}
-          className="fixed bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg p-2 shadow-lg z-[10001] w-37"
+          className="fixed bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg p-2 shadow-lg z-10001 w-37"
           style={popoverStyle}
           onPointerDown={(e) => e.stopPropagation()}
         >

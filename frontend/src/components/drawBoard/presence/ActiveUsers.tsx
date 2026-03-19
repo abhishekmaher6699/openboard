@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { PresenceUser } from "../../../hooks/board/presence/UsePresence";
 import { getInitials } from "../../../hooks/board/presence/UsePresence";
 import { getUserColor } from "../../../lib/activityUtils";
@@ -17,9 +17,12 @@ export default function ActiveUsers({ users, currentUserId }: ActiveUsersProps) 
   const overflow = users.length - MAX_VISIBLE;
 
   return (
-    <div className="fixed top-4 left-4 z-[9999] flex flex-col gap-2">
+    <div className="fixed top-4 left-4 z-10000 flex flex-col gap-2">
       {/* Header pill */}
-      <div className="flex items-center gap-2 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm border border-slate-200 dark:border-neutral-700 rounded-full px-3 py-1.5 shadow-md w-fit">
+      <div
+        onClick={() => setExpanded(o => !o)}
+        className="flex items-center gap-2 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm border border-slate-200 dark:border-neutral-700 rounded-full px-3 py-1.5 shadow-md w-fit cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-700/90 transition-colors"
+      >
         {/* Stacked avatars */}
         <div className="flex items-center">
           {visible.map((user, i) => {
@@ -51,7 +54,7 @@ export default function ActiveUsers({ users, currentUserId }: ActiveUsersProps) 
           {/* Overflow badge */}
           {!expanded && overflow > 0 && (
             <button
-              onClick={() => setExpanded(true)}
+              onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
               className="w-7 h-7 rounded-full flex items-center justify-center bg-slate-100 dark:bg-neutral-700 text-slate-600 dark:text-gray-300 text-[11px] font-semibold ring-2 ring-white dark:ring-neutral-800 shadow-sm hover:bg-slate-200 dark:hover:bg-neutral-600 transition-colors"
               style={{ marginLeft: -8, zIndex: 0 }}
             >
@@ -66,9 +69,9 @@ export default function ActiveUsers({ users, currentUserId }: ActiveUsersProps) 
         </span>
 
         {/* Collapse button */}
-        {expanded && overflow > 0 && (
+        {expanded && (
           <button
-            onClick={() => setExpanded(false)}
+            onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
             className="text-[11px] text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 transition-colors ml-1"
           >
             ▲

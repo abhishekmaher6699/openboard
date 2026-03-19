@@ -52,7 +52,7 @@ export default function RemoteSelections({
         return (
           <div
             key={user.user_id}
-            className="fixed pointer-events-none z-[9996]"
+            className="fixed pointer-events-none z-9996"
             style={{
               left: topLeft.x,
               top: topLeft.y,

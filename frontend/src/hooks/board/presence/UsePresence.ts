@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 export interface PresenceUser {
   user_id: number;
@@ -44,7 +44,6 @@ export function usePresence({
   viewportRef,
 }: UsePresenceProps) {
   const [users, setUsers] = useState<PresenceUser[]>([]);
-  const lastSentRef = useRef(0);
 
   useEffect(() => {
     const unregister = onMessage((data) => {

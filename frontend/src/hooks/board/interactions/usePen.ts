@@ -1,6 +1,5 @@
 import { Graphics } from "pixi.js";
 import { useEffect, useRef } from "react";
-import type { BoardObject } from "../../../types/board";
 import { simplifyPoints, flattenPoints, getBounds } from "../../../lib/penUtils";
 
 type Props = {
@@ -22,7 +21,6 @@ function getDefaultPenColor() {
 export function usePen({
   viewportRef,
   itemsLayerRef,
-  interactionRef,
   tool,
   color,
   strokeWidth,
@@ -44,8 +42,6 @@ export function usePen({
     const viewport = viewportRef.current;
     const itemsLayer = itemsLayerRef.current;
     if (!viewport || !itemsLayer) return;
-
-    const interaction = interactionRef.current;
 
     let drawing = false;
     let rawPoints: [number, number][] = [];
