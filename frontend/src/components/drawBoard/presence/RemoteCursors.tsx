@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { PresenceUser } from "../../../hooks/board/presence/UsePresence";
-import {
-  getUserColor,
-  getInitials,
-} from "../../../hooks/board/presence/UsePresence";
+import { getUserColor } from "../../../lib/activityUtils";
+import { useTheme } from "../../../context/theme-context";
 
 interface RemoteCursorsProps {
   users: PresenceUser[];
@@ -21,10 +19,14 @@ export default function RemoteCursors({
   users,
   viewportRef,
 }: RemoteCursorsProps) {
+
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [, forceUpdate] = useState(0);
   const cursorsRef = useRef<Map<number, AnimatedCursor>>(new Map());
 
-  // 🎯 Initialize / update targets
+
   useEffect(() => {
     users.forEach((user) => {
       if (!user.cursor) return;
@@ -91,7 +93,7 @@ export default function RemoteCursors({
 
         const screenPos = viewport.toScreen(cursor.x, cursor.y);
 
-        const color = getUserColor(user.user_id);
+        const color = getUserColor(user.username);
 
         return (
           <div
@@ -101,6 +103,9 @@ export default function RemoteCursors({
               left: screenPos.x,
               top: screenPos.y,
               transform: "translate(-2px, -2px)",
+              filter: isDark
+                ? "drop-shadow(0 1px 3px rgba(0,0,0,0.8))"
+                : "drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
             }}
           >
             {/* Cursor */}

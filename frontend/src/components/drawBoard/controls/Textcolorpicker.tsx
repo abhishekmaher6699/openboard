@@ -92,17 +92,19 @@ export default function TextColorPicker({ value, onChange }: TextColorPickerProp
         onClick={() => setOpen(o => !o)}
         title="Text color"
         className={`w-7 h-7 flex flex-col items-center justify-center rounded cursor-pointer gap-0.5 p-0 transition-colors ${
-          open ? "bg-slate-100" : "hover:bg-slate-100"
+          open
+            ? "bg-slate-100 dark:bg-neutral-700"
+            : "hover:bg-slate-100 dark:hover:bg-neutral-700"
         }`}
       >
-        <span className="text-[13px] font-bold text-gray-700 leading-none">A</span>
+        <span className="text-[13px] font-bold text-gray-700 dark:text-gray-200 leading-none">A</span>
         <div className="w-3.5 h-0.5 rounded-sm" style={{ background: value }} />
       </button>
 
       {open && rect && createPortal(
         <div
           ref={popoverRef}
-          className="fixed bg-white border border-slate-200 rounded-lg p-2 shadow-lg z-[10001] w-37"
+          className="fixed bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg p-2 shadow-lg z-[10001] w-37"
           style={popoverStyle}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -120,14 +122,14 @@ export default function TextColorPicker({ value, onChange }: TextColorPickerProp
             ))}
           </div>
 
-          <div className="h-px bg-slate-200 mb-2" />
+          <div className="h-px bg-slate-200 dark:bg-neutral-700 mb-2" />
 
-          <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-500">
+          <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-500 dark:text-gray-300">
             <input
               type="color"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="w-6 h-6 border border-slate-200 rounded cursor-pointer p-px"
+              className="w-6 h-6 border border-slate-200 dark:border-neutral-700 rounded cursor-pointer p-px"
             />
             Custom
           </label>

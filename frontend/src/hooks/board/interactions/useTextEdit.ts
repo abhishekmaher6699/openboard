@@ -6,6 +6,8 @@ function getTextareaStyles(
   screenPos: { x: number; y: number },
   scale: number,
 ): Partial<CSSStyleDeclaration> {
+
+  const isDark = document.documentElement.classList.contains("dark")
   return {
     position: "fixed",
     left: `${screenPos.x}px`,
@@ -17,12 +19,14 @@ function getTextareaStyles(
     padding: "8px",
     border: "2px solid #3b82f6",
     borderRadius: "4px",
-    background: obj.type === "text" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)",
+    background: isDark
+      ? (obj.type === "text" ? "rgba(38,38,38,0.95)" : "rgba(38,38,38,0.9)")
+      : (obj.type === "text" ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)"),
     resize: "none",
     outline: "none",
     zIndex: "9999",
     fontFamily: "sans-serif",
-    color: "#1a1a1a",
+    color: isDark ? "#e5e5e5" : "#1a1a1a",
     boxSizing: "border-box",
     textAlign: "center",
     overflow: "hidden",

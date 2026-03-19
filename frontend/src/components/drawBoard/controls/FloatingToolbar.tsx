@@ -73,7 +73,7 @@ export default function FloatingToolbar({
     (o) => toolbar.ids.includes(o.id) && (o.type === "text" || o.type === "sticky")
   );
   const textStyle = firstTextObj?.data ?? {};
-  const currentAlign: "left" | "center" | "right" = textStyle.align ?? "center";
+  const currentAlign = textStyle.align ?? "center";
 
   const TOOLBAR_WIDTH = 460;
   const clampedLeft = Math.min(
@@ -87,7 +87,7 @@ export default function FloatingToolbar({
 
   return (
     <div
-      className="fixed flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg px-1.5 py-1 shadow-lg select-none z-9999"
+      className="fixed flex items-center gap-0.5 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg px-1.5 py-1 shadow-lg select-none z-9999"
       style={positionStyle}
       onPointerDown={(e) => e.stopPropagation()}
     >
@@ -95,7 +95,6 @@ export default function FloatingToolbar({
         <Copy size={14} />
       </ToolbarButton>
 
-      {/* Layering — always separate buttons */}
       <div className="flex gap-0.5">
         <ToolbarButton onClick={onBringToFront} title="Bring to front">
           <BringToFront size={14} />
@@ -111,18 +110,16 @@ export default function FloatingToolbar({
         </ToolbarButton>
       </div>
 
-      {/* Text options */}
       {hasText && (
         <>
           <Divider />
 
-          {/* Desktop — inline */}
           {!isMobile && (
             <>
               <select
                 value={textStyle.fontFamily ?? "sans-serif"}
                 onChange={(e) => onFontFamily(e.target.value)}
-                className="text-xs border border-slate-200 rounded px-1 py-0.5 bg-white text-gray-700 max-w-[100px]"
+                className="text-xs border border-slate-200 dark:border-neutral-700 rounded px-1 py-0.5 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200 max-w-[100px]"
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 {FONTS.map((f) => (
@@ -138,7 +135,7 @@ export default function FloatingToolbar({
               <select
                 value={textStyle.fontSize ?? 16}
                 onChange={(e) => onFontSize(Number(e.target.value))}
-                className="text-xs border border-slate-200 rounded px-1 py-0.5 bg-white text-gray-700 w-12"
+                className="text-xs border border-slate-200 dark:border-neutral-700 rounded px-1 py-0.5 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200 w-12"
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 {FONT_SIZES.map((s) => (
@@ -147,14 +144,15 @@ export default function FloatingToolbar({
               </select>
 
               <Divider />
+
               <ToolbarButton onClick={onBold} title="Bold" active={textStyle.bold}>
                 <Bold size={14} />
               </ToolbarButton>
+
               <ToolbarButton onClick={onItalic} title="Italic" active={textStyle.italic}>
                 <Italic size={14} />
               </ToolbarButton>
 
-              {/* Separate align buttons */}
               {ALIGN_OPTIONS.map(({ value, icon, title }) => (
                 <ToolbarButton
                   key={value}
@@ -168,22 +166,21 @@ export default function FloatingToolbar({
             </>
           )}
 
-          {/* Mobile — collapsed into dropdown */}
           {isMobile && (
             <div className="relative">
               <ToolbarButton onClick={() => setMoreOpen(o => !o)} title="More" active={moreOpen}>
                 <Ellipsis size={14} />
               </ToolbarButton>
+
               {moreOpen && (
-                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white border border-slate-200 rounded-lg shadow-lg p-2 z-[10001] w-48">
-                  {/* Font family */}
+                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg shadow-lg p-2 z-[10001] w-48">
+
                   <div className="mb-2">
-                    <p className="text-[10px] text-gray-400 mb-1 px-1">Font</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">Font</p>
                     <select
                       value={textStyle.fontFamily ?? "sans-serif"}
-                      onChange={(e) => { onFontFamily(e.target.value); }}
-                      className="w-full text-xs border border-slate-200 rounded px-1 py-1 bg-white text-gray-700"
-                      onPointerDown={(e) => e.stopPropagation()}
+                      onChange={(e) => onFontFamily(e.target.value)}
+                      className="w-full text-xs border border-slate-200 dark:border-neutral-700 rounded px-1 py-1 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200"
                     >
                       {FONTS.map((f) => (
                         <option key={f.value} value={f.value}>{f.label}</option>
@@ -191,14 +188,12 @@ export default function FloatingToolbar({
                     </select>
                   </div>
 
-                  {/* Font size */}
                   <div className="mb-2">
-                    <p className="text-[10px] text-gray-400 mb-1 px-1">Size</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">Size</p>
                     <select
                       value={textStyle.fontSize ?? 16}
-                      onChange={(e) => { onFontSize(Number(e.target.value)); }}
-                      className="w-full text-xs border border-slate-200 rounded px-1 py-1 bg-white text-gray-700"
-                      onPointerDown={(e) => e.stopPropagation()}
+                      onChange={(e) => onFontSize(Number(e.target.value))}
+                      className="w-full text-xs border border-slate-200 dark:border-neutral-700 rounded px-1 py-1 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200"
                     >
                       {FONT_SIZES.map((s) => (
                         <option key={s} value={s}>{s}</option>
@@ -206,31 +201,29 @@ export default function FloatingToolbar({
                     </select>
                   </div>
 
-                  {/* Text color */}
                   <div className="mb-2">
-                    <p className="text-[10px] text-gray-400 mb-1 px-1">Color</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">Color</p>
                     <div className="px-1">
                       <TextColorPicker
                         value={firstTextObj?.data?.textColor ?? "#1a1a1a"}
-                        onChange={(c) => { onTextColor(c); }}
+                        onChange={onTextColor}
                       />
                     </div>
                   </div>
 
-                  <div className="h-px bg-slate-100 mb-2" />
+                  <div className="h-px bg-slate-100 dark:bg-neutral-700 mb-2" />
 
-                  {/* Bold / Italic / Separate align buttons */}
                   <div className="flex items-center gap-1 px-1">
-                    <ToolbarButton onClick={() => { onBold(); }} title="Bold" active={textStyle.bold}>
+                    <ToolbarButton onClick={onBold} title="Bold" active={textStyle.bold}>
                       <Bold size={14} />
                     </ToolbarButton>
-                    <ToolbarButton onClick={() => { onItalic(); }} title="Italic" active={textStyle.italic}>
+                    <ToolbarButton onClick={onItalic} title="Italic" active={textStyle.italic}>
                       <Italic size={14} />
                     </ToolbarButton>
                     {ALIGN_OPTIONS.map(({ value, icon, title }) => (
                       <ToolbarButton
                         key={value}
-                        onClick={() => { onAlign(value); }}
+                        onClick={() => onAlign(value)}
                         title={title}
                         active={currentAlign === value}
                       >
@@ -246,6 +239,7 @@ export default function FloatingToolbar({
       )}
 
       <Divider />
+
       <ToolbarButton onClick={onDelete} title="Delete" danger>
         <Trash2 size={14} />
       </ToolbarButton>
@@ -260,10 +254,10 @@ function ToolbarButton({ onClick, title, children, active, danger }: any) {
       title={title}
       className={`w-7 h-7 flex items-center justify-center rounded text-[13px] transition-colors ${
         active
-          ? "bg-blue-100 text-blue-600"
+          ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300"
           : danger
-          ? "text-red-500 hover:bg-red-50"
-          : "text-gray-700 hover:bg-slate-100"
+          ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
+          : "text-gray-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-neutral-700"
       }`}
     >
       {children}
@@ -272,12 +266,12 @@ function ToolbarButton({ onClick, title, children, active, danger }: any) {
 }
 
 function Divider() {
-  return <div className="w-px h-5 bg-slate-200 mx-0.5" />;
+  return <div className="w-px h-5 bg-slate-200 dark:bg-neutral-700 mx-0.5" />;
 }
 
 function Dropdown({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-[10001] w-36">
+    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 z-[10001] w-36">
       {children}
     </div>
   );
@@ -287,7 +281,7 @@ function MenuItem({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-slate-50"
+      className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-neutral-700"
     >
       {label}
     </button>

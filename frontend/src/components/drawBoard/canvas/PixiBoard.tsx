@@ -19,10 +19,17 @@ import { getBoardObjects } from "../../../api/boardObjects";
 import BoardControls from "../controls/BoardControls";
 import RemoteSelections from "../presence/RemoteSelection";
 
+import { useTheme } from "../../../context/theme-context";
+
 export default function PixiBoard({ boardId }: { boardId: string }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [objects, setObjects] = useState<BoardObject[]>([]);
   const [tool, setTool] = useState<Tool>("select");
-  const [color, setColor] = useState("#ff0000");
+
+  const [color, setColor] = useState(() => (isDark ? "#ffffff" : "#000000"));
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
   const [strokeWidth, setStrokeWidth] = useState(3);
@@ -36,6 +43,10 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     objectsRef.current = objects;
     objectMapRef.current = new Map(objects.map((o) => [o.id, o]));
   }, [objects]);
+
+  useEffect(() => {
+    setColor(isDark ? "#ffffff" : "#000000");
+  }, [isDark]);
 
   const [currentUserId] = useState<number | null>(() => {
     const token = localStorage.getItem("access");
@@ -259,8 +270,9 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
       />
 
       <Application
+        key={theme}
         resizeTo={window}
-        background={0xffffff}
+        background={isDark ? 0x1e1e1e : 0xffffff}
         antialias
         resolution={window.devicePixelRatio}
         autoDensity

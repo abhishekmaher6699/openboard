@@ -1,6 +1,10 @@
 import { Graphics, Text, TextStyle, Container } from "pixi.js";
 import type { BoardObject } from "../types/board";
 
+function isDarkMode() {
+  return document.documentElement.classList.contains("dark");
+}
+
 const BASE_TEXT_STYLE = new TextStyle({
   fontSize: 16,
   fill: 0x1a1a1a,
@@ -10,7 +14,6 @@ const BASE_TEXT_STYLE = new TextStyle({
   breakWords: true,
 });
 
-// sticky note colors — slightly darker shade used for the fold corner
 const STICKY_FOLD_DARKEN = 0.85;
 
 function hexDarken(hex: number, factor: number): number {
@@ -21,6 +24,8 @@ function hexDarken(hex: number, factor: number): number {
 }
 
 export function drawShapeFromObj(container: Container, obj: BoardObject) {
+  const dark = isDarkMode();
+
   const width = obj.width ?? 200;
   const height = obj.height ?? 120;
   const fill = Number(obj.data?.fill ?? "0xffd700");
@@ -45,11 +50,13 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
     const foldSize = Math.min(20, width * 0.12);
     const shadowOffset = 4;
 
-    // drop shadow
+    // 🔥 Dark mode shadow adjustment
     g.rect(shadowOffset, shadowOffset, width, height);
-    g.fill({ color: 0x000000, alpha: 0.15 });
+    g.fill({
+      color: 0x000000,
+      alpha: dark ? 0.3 : 0.15,
+    });
 
-    // main body with folded corner (top-right)
     g.moveTo(0, 0);
     g.lineTo(width - foldSize, 0);
     g.lineTo(width, foldSize);
@@ -57,15 +64,19 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
     g.lineTo(0, height);
     g.closePath();
     g.fill(fill);
-    g.stroke({ width: 0.5, color: hexDarken(fill, 0.7), alpha: 0.5 });
+    g.stroke({
+      width: 0.5,
+      color: hexDarken(fill, dark ? 0.5 : 0.7),
+      alpha: 0.5,
+    });
 
-    // fold triangle
     const foldColor = hexDarken(fill, STICKY_FOLD_DARKEN);
     g.moveTo(width - foldSize, 0);
     g.lineTo(width, foldSize);
     g.lineTo(width - foldSize, foldSize);
     g.closePath();
     g.fill(foldColor);
+
   } else if (obj.type === "text") {
     // no background
   } else if (obj.type === "circle") {
@@ -106,10 +117,10 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
     g.fill(fill);
   }
 
-  // text label — only for sticky and freestanding text
   const showText = obj.type === "sticky" || obj.type === "text";
 
   let t = container.getChildByName("label") as Text;
+
   if (showText) {
     if (!t) {
       t = new Text({ text: "", style: BASE_TEXT_STYLE.clone() });
@@ -125,19 +136,23 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
     t.style.wordWrap = true;
     t.style.wordWrapWidth = width - 24;
     t.style.breakWords = true;
+
+    // 🔥 Dark mode default text color
     const textColor = obj.data?.textColor
       ? parseInt(obj.data.textColor.replace("#", ""), 16)
-      : 0x1a1a1a;
+      : dark
+        ? 0xe5e5e5
+        : 0x1a1a1a;
+
     t.style.fill = textColor;
 
     t.text = text;
     t.anchor.set(align === "left" ? 0 : align === "right" ? 1 : 0.5, 0.5);
     t.x = align === "left" ? 12 : align === "right" ? width - 12 : width / 2;
-    // shift text up slightly on sticky to avoid the fold
     t.y = obj.type === "sticky" ? height / 2 + 4 : height / 2;
     t.visible = true;
+
   } else {
-    // hide label if it exists but type doesn't support text
     if (t) t.visible = false;
   }
 }
