@@ -212,6 +212,7 @@ export type BoardActivity = {
   action_type: string
   payload: Record<string, any>
   snapshot: BoardObject[]
+  diff: Record<string, any> | null
   created_at: string
-  sequence: number,
+  sequence: number
 }

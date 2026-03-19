@@ -1,35 +1,69 @@
 import { useRef } from "react";
 import type { BoardObject } from "../../../types/board";
 import type { BoardDiff } from "../../../lib/diffUtils";
-import { createObject, deleteObject as deleteObjectApi, updateObject } from "../../../api/board_objects";
+import {
+  createObject,
+  deleteObject as deleteObjectApi,
+  updateObject,
+} from "../../../api/board_objects";
 
 type Props = {
   boardId: string;
   color: string;
   objects: BoardObject[];
   setObjects: React.Dispatch<React.SetStateAction<BoardObject[]>>;
-  sendUpdate: (id: string, changes: Partial<BoardObject> & { data?: Record<string, any> }, actionType?: string, diff?: BoardDiff) => void;
-  sendManyMoves: (moves: { id: string; x: number; y: number }[], diff: BoardDiff) => void;
+  sendUpdate: (
+    id: string,
+    changes: Partial<BoardObject> & { data?: Record<string, any> },
+    actionType?: string,
+    diff?: BoardDiff,
+  ) => void;
+  sendManyMoves: (
+    moves: { id: string; x: number; y: number }[],
+    diff: BoardDiff,
+  ) => void;
   sendDelete: (id: string, diff: BoardDiff) => void;
   sendManyDelete: (ids: string[], diff: BoardDiff) => void;
   sendCreate: (object: BoardObject, diff: BoardDiff) => void;
-  sendResizeMany: (resizes: { id: string; width: number; height: number; x: number; y: number }[], diff: BoardDiff) => void;
+  sendResizeMany: (
+    resizes: {
+      id: string;
+      width: number;
+      height: number;
+      x: number;
+      y: number;
+    }[],
+    diff: BoardDiff,
+  ) => void;
 };
 
 export function useBoardObjects({
-  boardId, color, objects, setObjects,
-  sendUpdate, sendManyMoves, sendDelete,
-  sendManyDelete, sendCreate, sendResizeMany,
+  boardId,
+  color,
+  objects,
+  setObjects,
+  sendUpdate,
+  sendManyMoves,
+  sendDelete,
+  sendManyDelete,
+  sendCreate,
+  sendResizeMany,
 }: Props) {
   const objectsRef = useRef<BoardObject[]>([]);
   objectsRef.current = objects;
 
-  const createNewObject = async (type: string, x: number, y: number): Promise<string | null> => {
+  const createNewObject = async (
+    type: string,
+    x: number,
+    y: number,
+  ): Promise<string | null> => {
     const fill = color.replace("#", "0x");
     const maxZ = Math.max(0, ...objectsRef.current.map((o) => o.z_index ?? 0));
     const defaultFill = type === "sticky" ? "0xffd700" : fill;
     const newObject = {
-      type, x, y,
+      type,
+      x,
+      y,
       width: 200,
       height: type === "text" ? 80 : 120,
       z_index: maxZ + 1000,
@@ -48,38 +82,57 @@ export function useBoardObjects({
   };
 
   const moveObject = async (id: string, x: number, y: number) => {
-    const obj = objectsRef.current.find(o => o.id === id);
+    const obj = objectsRef.current.find((o) => o.id === id);
     if (!obj) return;
     // capture where it was before moving
-    const diff: BoardDiff = { type: "move", id, from: { x: obj.x, y: obj.y }, to: { x, y } };
+    const diff: BoardDiff = {
+      type: "move",
+      id,
+      from: { x: obj.x, y: obj.y },
+      to: { x, y },
+    };
     setObjects((prev) => prev.map((o) => (o.id === id ? { ...o, x, y } : o)));
     try {
       sendUpdate(id, { x, y }, "move_shape", diff);
       await updateObject(boardId, id, { x, y });
-    } catch (err) { console.error("Move failed", err); }
+    } catch (err) {
+      console.error("Move failed", err);
+    }
   };
 
-  const moveManyObjects = async (moves: { id: string; x: number; y: number }[]) => {
+  const moveManyObjects = async (
+    moves: { id: string; x: number; y: number }[],
+  ) => {
     // capture all previous positions
     const diff: BoardDiff = {
       type: "move_many",
-      moves: moves.map(m => {
-        const obj = objectsRef.current.find(o => o.id === m.id);
-        return { id: m.id, from: { x: obj?.x ?? 0, y: obj?.y ?? 0 }, to: { x: m.x, y: m.y } }
-      })
+      moves: moves.map((m) => {
+        const obj = objectsRef.current.find((o) => o.id === m.id);
+        return {
+          id: m.id,
+          from: { x: obj?.x ?? 0, y: obj?.y ?? 0 },
+          to: { x: m.x, y: m.y },
+        };
+      }),
     };
-    setObjects((prev) => prev.map((obj) => {
-      const move = moves.find((m) => m.id === obj.id);
-      return move ? { ...obj, x: move.x, y: move.y } : obj;
-    }));
+    setObjects((prev) =>
+      prev.map((obj) => {
+        const move = moves.find((m) => m.id === obj.id);
+        return move ? { ...obj, x: move.x, y: move.y } : obj;
+      }),
+    );
     try {
       sendManyMoves(moves, diff);
-      await Promise.all(moves.map((m) => updateObject(boardId, m.id, { x: m.x, y: m.y })));
-    } catch (err) { console.error("Move many failed", err); }
+      await Promise.all(
+        moves.map((m) => updateObject(boardId, m.id, { x: m.x, y: m.y })),
+      );
+    } catch (err) {
+      console.error("Move many failed", err);
+    }
   };
 
   const deleteObject = async (id: string) => {
-    const obj = objectsRef.current.find(o => o.id === id);
+    const obj = objectsRef.current.find((o) => o.id === id);
     if (!obj) return;
     // capture the full object so we can restore it on undo
     const diff: BoardDiff = { type: "delete", object: obj };
@@ -87,93 +140,154 @@ export function useBoardObjects({
     try {
       await deleteObjectApi(boardId, id);
       sendDelete(id, diff);
-    } catch (err) { console.error("Delete failed", err); }
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
   };
 
   const deleteManyObjects = async (ids: string[]) => {
-    const deletedObjects = objectsRef.current.filter(o => ids.includes(o.id));
+    const deletedObjects = objectsRef.current.filter((o) => ids.includes(o.id));
     // capture all deleted objects so we can restore them on undo
     const diff: BoardDiff = { type: "delete_many", objects: deletedObjects };
     setObjects((prev) => prev.filter((obj) => !ids.includes(obj.id)));
     try {
       sendManyDelete(ids, diff);
       await Promise.all(ids.map((id) => deleteObjectApi(boardId, id)));
-    } catch (err) { console.error("Delete many failed", err); }
+    } catch (err) {
+      console.error("Delete many failed", err);
+    }
   };
 
-  const resizeObject = async (id: string, width: number, height: number, x: number, y: number) => {
-    const obj = objectsRef.current.find(o => o.id === id);
+  const resizeObject = async (
+    id: string,
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+  ) => {
+    const obj = objectsRef.current.find((o) => o.id === id);
     if (!obj) return;
     const diff: BoardDiff = {
-      type: "resize", id,
-      from: { x: obj.x, y: obj.y, width: obj.width ?? 200, height: obj.height ?? 120 },
-      to: { x, y, width, height }
+      type: "resize",
+      id,
+      from: {
+        x: obj.x,
+        y: obj.y,
+        width: obj.width ?? 200,
+        height: obj.height ?? 120,
+      },
+      to: { x, y, width, height },
     };
-    setObjects((prev) => prev.map((o) => o.id === id ? { ...o, width, height, x, y } : o));
+    setObjects((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, width, height, x, y } : o)),
+    );
     try {
       sendUpdate(id, { width, height, x, y }, "resize_shape", diff);
       await updateObject(boardId, id, { width, height, x, y });
-    } catch (err) { console.error("Resize failed", err); }
+    } catch (err) {
+      console.error("Resize failed", err);
+    }
   };
 
-  const resizeManyObjects = async (resizes: { id: string; width: number; height: number; x: number; y: number }[]) => {
+  const resizeManyObjects = async (
+    resizes: {
+      id: string;
+      width: number;
+      height: number;
+      x: number;
+      y: number;
+    }[],
+  ) => {
     const diff: BoardDiff = {
       type: "resize_many",
-      resizes: resizes.map(r => {
-        const obj = objectsRef.current.find(o => o.id === r.id);
+      resizes: resizes.map((r) => {
+        const obj = objectsRef.current.find((o) => o.id === r.id);
         return {
           id: r.id,
-          from: { x: obj?.x ?? 0, y: obj?.y ?? 0, width: obj?.width ?? 200, height: obj?.height ?? 120 },
-          to: { x: r.x, y: r.y, width: r.width, height: r.height }
-        }
-      })
+          from: {
+            x: obj?.x ?? 0,
+            y: obj?.y ?? 0,
+            width: obj?.width ?? 200,
+            height: obj?.height ?? 120,
+          },
+          to: { x: r.x, y: r.y, width: r.width, height: r.height },
+        };
+      }),
     };
-    setObjects((prev) => prev.map((obj) => {
-      const r = resizes.find((r) => r.id === obj.id);
-      return r ? { ...obj, ...r } : obj;
-    }));
+    setObjects((prev) =>
+      prev.map((obj) => {
+        const r = resizes.find((r) => r.id === obj.id);
+        return r ? { ...obj, ...r } : obj;
+      }),
+    );
     try {
       sendResizeMany(resizes, diff);
-      await Promise.all(resizes.map((r) => updateObject(boardId, r.id, { x: r.x, y: r.y, width: r.width, height: r.height })));
-    } catch (err) { console.error("Resize many failed", err); }
+      await Promise.all(
+        resizes.map((r) =>
+          updateObject(boardId, r.id, {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+          }),
+        ),
+      );
+    } catch (err) {
+      console.error("Resize many failed", err);
+    }
   };
 
   const updateColor = async (ids: string[], newColor: string) => {
     const fill = newColor.replace("#", "0x");
-    ids.forEach(id => {
-      const obj = objectsRef.current.find(o => o.id === id);
+    ids.forEach((id) => {
+      const obj = objectsRef.current.find((o) => o.id === id);
       if (!obj) return;
       // capture previous fill value
       const diff: BoardDiff = {
-        type: "update", id,
+        type: "update",
+        id,
         from: { data: { fill: obj.data?.fill } },
-        to: { data: { fill } }
+        to: { data: { fill } },
       };
       sendUpdate(id, { data: { fill } }, "update_color", diff);
     });
-    setObjects((prev) => prev.map((obj) => ids.includes(obj.id) ? { ...obj, data: { ...obj.data, fill } } : obj));
+    setObjects((prev) =>
+      prev.map((obj) =>
+        ids.includes(obj.id) ? { ...obj, data: { ...obj.data, fill } } : obj,
+      ),
+    );
     try {
-      await Promise.all(ids.map((id) => {
-        const existing = objectsRef.current.find((o) => o.id === id)?.data ?? {};
-        return updateObject(boardId, id, { data: { ...existing, fill } });
-      }));
-    } catch (err) { console.error("Color update failed", err); }
+      await Promise.all(
+        ids.map((id) => {
+          const existing =
+            objectsRef.current.find((o) => o.id === id)?.data ?? {};
+          return updateObject(boardId, id, { data: { ...existing, fill } });
+        }),
+      );
+    } catch (err) {
+      console.error("Color update failed", err);
+    }
   };
 
   const updateText = async (id: string, text: string) => {
-    const obj = objectsRef.current.find(o => o.id === id);
+    const obj = objectsRef.current.find((o) => o.id === id);
     // capture previous text value
     const diff: BoardDiff = {
-      type: "update", id,
+      type: "update",
+      id,
       from: { data: { text: obj?.data?.text ?? "" } },
-      to: { data: { text } }
+      to: { data: { text } },
     };
-    setObjects((prev) => prev.map((o) => o.id === id ? { ...o, data: { ...o.data, text } } : o));
+    setObjects((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, data: { ...o.data, text } } : o)),
+    );
     try {
       sendUpdate(id, { data: { text } }, "update_text", diff);
       const existing = objectsRef.current.find((o) => o.id === id)?.data ?? {};
       await updateObject(boardId, id, { data: { ...existing, text } });
-    } catch (err) { console.error("Text update failed", err); }
+    } catch (err) {
+      console.error("Text update failed", err);
+    }
   };
 
   return {

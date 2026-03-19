@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { BoardActivity, BoardObject } from "../../../../types/board";
+import { replayToActivity } from "../../../../lib/diffUtils";
 
 type Props = {
   activities: BoardActivity[];
@@ -7,8 +8,8 @@ type Props = {
   ready: boolean;
   isOpen: boolean;
   onClose: () => void;
-  onPreview: (snapshot: BoardObject[], label: string) => void;
-  onRestore: (snapshot: BoardObject[], activityId: string) => void;
+  onPreview: (snapshot: BoardObject[], label: string, sequence: number) => void;
+  onRestore: (snapshot: BoardObject[], sequence: number) => void;
   activeSnapshot: BoardObject[] | null;
   currentActivityId: string | null;
   exitPreview: () => void;
@@ -195,11 +196,11 @@ export default function ActivityPanel({
                   isActive ? "hover:bg-blue-100" : "hover:bg-gray-50"
                 }`}
                 onClick={() => {
-                  const snapshot = getSafeSnapshot(group, groups, groupIdx);
-                  if (snapshot == null) return;
+                  const snapshot = replayToActivity(activities, last.id);
                   onPreview(
                     snapshot,
                     `${formatDate(last.created_at)} ${formatTime(last.created_at)}`,
+                    last.sequence
                   );
                 }}
               >
@@ -262,11 +263,11 @@ export default function ActivityPanel({
                     <div
                       key={activity.id}
                       onClick={() => {
-                        const snap = activity.snapshot as BoardObject[] | null;
-                        if (snap == null) return;
+                        const snapshot = replayToActivity(activities, activity.id);
                         onPreview(
-                          snap,
+                          snapshot,
                           `${formatDate(activity.created_at)} ${formatTime(activity.created_at)}`,
+                          activity.sequence
                         );
                       }}
                       className={`pl-[54px] pr-4 py-1.5 text-xs text-gray-500 cursor-pointer flex justify-between items-center transition-colors ${
@@ -298,7 +299,8 @@ export default function ActivityPanel({
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => {
-                        onRestore(last.snapshot as BoardObject[], last.id);
+                        const snapshot = replayToActivity(activities, last.id);
+                        onRestore(snapshot, last.sequence);
                         setConfirmingId(null);
                       }}
                       className="flex-1 py-1.5 bg-gray-900 text-white border-none rounded cursor-pointer text-xs font-medium hover:bg-gray-700 transition-colors"

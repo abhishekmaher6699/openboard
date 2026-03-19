@@ -1,4 +1,4 @@
-import type { BoardObject } from "../types/board"
+import type { BoardObject, BoardActivity } from "../types/board"
 
 export type MoveDiff = {
   type: "move"
@@ -46,6 +46,12 @@ export type UpdateDiff = {
   to: Record<string, any>
 }
 
+export type CreateManyDiff = {
+  type: "create_many"
+  objects: BoardObject[]
+}
+
+
 export type BoardDiff =
   | MoveDiff
   | MoveManyDiff
@@ -54,6 +60,7 @@ export type BoardDiff =
   | CreateDiff
   | DeleteDiff
   | DeleteManyDiff
+  | CreateManyDiff
   | UpdateDiff
 
 export function inverse(diff: BoardDiff): BoardDiff {
@@ -63,6 +70,8 @@ export function inverse(diff: BoardDiff): BoardDiff {
     case "delete":
       return { type: "create", object: diff.object }
     case "delete_many":
+      return { type: "create_many", objects: diff.objects }
+    case "create_many":
       return { type: "delete_many", objects: diff.objects }
     case "move":
       return { type: "move", id: diff.id, from: diff.to, to: diff.from }
@@ -127,5 +136,25 @@ export function applyDiff(objects: BoardObject[], diff: BoardDiff): BoardObject[
           : o.data
         return { ...o, ...diff.to, data: newData }
       })
+
+    case "create_many": {
+        const existingIds = new Set(objects.map(o => o.id))
+        const newObjects = diff.objects.filter(o => !existingIds.has(o.id))
+        return [...objects, ...newObjects]
+}
   }
+}
+
+export function replayToActivity(
+  activities: BoardActivity[],
+  targetId: string
+): BoardObject[] {
+  let state: BoardObject[] = [];
+  for (const activity of activities) {
+    if (activity.diff) {
+      state = applyDiff(state, activity.diff as BoardDiff);
+    }
+    if (activity.id === targetId) break;
+  }
+  return state;
 }

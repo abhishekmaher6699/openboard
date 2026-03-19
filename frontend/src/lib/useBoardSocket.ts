@@ -8,7 +8,7 @@ type Props = {
   objectsRef: React.RefObject<BoardObject[]>;
   setObjects: React.Dispatch<React.SetStateAction<BoardObject[]>>;
   onActivity?: (activity: BoardActivity, deletedIds?: string[]) => void;
-  onRestore?: (snapshot: BoardObject[]) => void;
+  onRestore?: (snapshot: BoardObject[], deletedIds: string[]) => void;
   onUndoApplied?: (cursorSequence: number, userId: number) => void;
   onRedoApplied?: (cursorSequence: number, userId: number) => void;
 };
@@ -66,12 +66,13 @@ export default function useBoardSocket({
       }
 
       if (data.type === "restore_snapshot") {
-        onRestoreRef.current?.(data.snapshot);
+        onRestoreRef.current?.(data.snapshot, data.deleted_ids ?? []);
         return;
       }
 
       if (data.type === "undo_applied") {
         const inv = data.inv_diff as BoardDiff;
+        console.log("ondo applied: ", JSON.stringify(inv))
         setObjects(prev => applyDiff(prev, inv));
         onUndoAppliedRef.current?.(data.cursor_sequence ?? 0, data.user_id);
         return;
@@ -131,6 +132,14 @@ export default function useBoardSocket({
         setObjects((prev) => prev.filter((obj) => !data.ids.includes(obj.id)));
       }
 
+      if (data.type === "create_many") {
+        setObjects((prev) => {
+          const existingIds = new Set(prev.map(o => o.id));
+          const newObjects = (data.objects as BoardObject[]).filter(o => !existingIds.has(o.id));
+          return [...prev, ...newObjects];
+        });
+      }
+
       if (data.type === "create_shape") {
         setObjects((prev) => {
           if (prev.some(o => o.id === data.object.id)) return prev;
@@ -186,8 +195,8 @@ export default function useBoardSocket({
   const sendCreate = (object: BoardObject, diff: BoardDiff) =>
     send({ type: "create_shape", object, diff });
 
-  const sendRestoreSnapshot = (snap: BoardObject[]) =>
-    send({ type: "restore_snapshot", snapshot: snap });
+  const sendRestoreSnapshot = (snap: BoardObject[], sequence: number) =>
+    send({ type: "restore_snapshot", snapshot: snap, sequence});
 
   const sendUndo = () => send({ type: "undo" });
   const sendRedo = () => send({ type: "redo" });

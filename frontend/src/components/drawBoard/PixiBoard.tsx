@@ -34,18 +34,17 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     objectMapRef.current = new Map(objects.map((o) => [o.id, o]));
   }, [objects]);
 
-const [currentUserId] = useState<number | null>(() => {
-  const token = localStorage.getItem("access");
-  if (!token) return null;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const id = Number(payload.user_id);
-    return isNaN(id) ? null : id;
-  } catch {
-    return null;
-  }
-});
-
+  const [currentUserId] = useState<number | null>(() => {
+    const token = localStorage.getItem("access");
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const id = Number(payload.user_id);
+      return isNaN(id) ? null : id;
+    } catch {
+      return null;
+    }
+  });
 
   const {
     toolbar,
@@ -58,6 +57,7 @@ const [currentUserId] = useState<number | null>(() => {
     previewLabel,
     enterPreview,
     exitPreview,
+    previewSequence,
   } = useActivityPreview();
 
   const {
@@ -80,10 +80,13 @@ const [currentUserId] = useState<number | null>(() => {
     objectsRef,
     setObjects,
     onActivity: (activity, deletedIds) => addActivity(activity, deletedIds),
-    onRestore: (snapshot) => {
+    onRestore: (snapshot, deletedIds) => {
       setObjects(snapshot);
       exitPreview();
-      onRestoreApplied();
+      clearSelectionRef.current?.()
+      hideToolbar();
+      onRestoreApplied(deletedIds);
+
     },
     onUndoApplied: (cursorSequence, userId) => {
       onUndoApplied(cursorSequence, Number(userId), Number(currentUserId));
@@ -147,16 +150,26 @@ const [currentUserId] = useState<number | null>(() => {
     }
   }, [isPreviewMode]);
 
+  useEffect(() => {
+    if (selectedIds.length === 0) return;
+    const objectIds = new Set(objects.map(o => o.id));
+    const missingIds = selectedIds.filter(id => !objectIds.has(id));
+    if (missingIds.length > 0) {
+      clearSelectionRef.current?.();
+      hideToolbar();
+    }
+  }, [objects]);
+
   const handleColorChange = (newColor: string) => {
     setColor(newColor);
     if (selectedIds.length > 0) updateColor(selectedIds, newColor);
   };
 
-  const handleRestore = (snapshot: BoardObject[]) => {
-    sendRestoreSnapshot(snapshot);
+  const handleRestore = (snapshot: BoardObject[], sequence: number) => {
+    sendRestoreSnapshot(snapshot, sequence);
     setObjects(snapshot);
     exitPreview();
-    onRestoreApplied();
+    // onRestoreApplied();
   };
 
   const displayObjects = isPreviewMode ? previewObjects : objects;
@@ -166,7 +179,7 @@ const [currentUserId] = useState<number | null>(() => {
       {isPreviewMode && (
         <PreviewBanner
           label={previewLabel}
-          onRestore={() => handleRestore(previewObjects)}
+          onRestore={() => handleRestore(previewObjects, previewSequence)}
           onExit={exitPreview}
         />
       )}
@@ -206,7 +219,7 @@ const [currentUserId] = useState<number | null>(() => {
         isOpen={activityPanelOpen}
         onClose={() => setActivityPanelOpen(false)}
         onPreview={enterPreview}
-        onRestore={handleRestore}
+        onRestore={() => handleRestore(previewObjects, previewSequence)}
         activeSnapshot={isPreviewMode ? previewObjects : null}
         currentActivityId={isPreviewMode ? null : currentActivityId}
         exitPreview={exitPreview}

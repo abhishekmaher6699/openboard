@@ -4,7 +4,10 @@ import type { BoardActivity } from "../types/board";
 
 const ACTIVITY_LIMIT = 50;
 
-export function useBoardActivity(boardId: string, currentUserId: number | null) {
+export function useBoardActivity(
+  boardId: string,
+  currentUserId: number | null,
+) {
   // console.log("useBoardActivity render, currentUserId:", currentUserId);
   const [activities, setActivities] = useState<BoardActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,14 +15,20 @@ export function useBoardActivity(boardId: string, currentUserId: number | null) 
 
   // track cursor by sequence number — stable regardless of array mutations
   const cursorSequenceRef = useRef<number>(0);
-  const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
+  const [currentActivityId, setCurrentActivityId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
-    apiRequest<BoardActivity[]>(`/boards/${boardId}/activities/?limit=${ACTIVITY_LIMIT}`)
+    apiRequest<BoardActivity[]>(
+      `/boards/${boardId}/activities/?limit=${ACTIVITY_LIMIT}`,
+    )
       .then((data) => {
         const sliced = data.slice(-ACTIVITY_LIMIT);
         setActivities(sliced);
-        const myLast = [...sliced].reverse().find((a) => Number(a.user?.id) === currentUserId);
+        const myLast = [...sliced]
+          .reverse()
+          .find((a) => Number(a.user?.id) === currentUserId);
         cursorSequenceRef.current = myLast?.sequence ?? 0;
         setCurrentActivityId(myLast?.id ?? null);
 
@@ -52,7 +61,6 @@ export function useBoardActivity(boardId: string, currentUserId: number | null) 
     });
   };
 
-
   // undo applied — move cursor to cursor_sequence sent by server
   const onUndoApplied = (
     cursorSequence: number,
@@ -84,15 +92,17 @@ export function useBoardActivity(boardId: string, currentUserId: number | null) 
     });
   };
 
-  const onRestoreApplied = () => {
-    setActivities((prev) => {
-      const last = prev[prev.length - 1];
-      cursorSequenceRef.current = last?.sequence ?? 0;
-      setCurrentActivityId(last?.id ?? null);
-      return prev;
-    });
-  };
-
+const onRestoreApplied = (deletedIds: string[] = []) => {
+  setActivities((prev) => {
+    const filtered = deletedIds.length
+      ? prev.filter((a) => !deletedIds.includes(a.id))
+      : prev;
+    const last = filtered[filtered.length - 1];
+    cursorSequenceRef.current = last?.sequence ?? 0;
+    setCurrentActivityId(last?.id ?? null);
+    return filtered;
+  });
+};
   return {
     activities,
     loading,

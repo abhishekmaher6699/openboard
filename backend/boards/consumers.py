@@ -118,12 +118,33 @@ class BoardConsumer(AsyncWebsocketConsumer):
         )
 
         if data["type"] == "restore_snapshot":
+            sequence = data.get("sequence", 0)
+            
+            # clear ALL undo and redo stacks for all users
             if self.board_id in _undo_stacks:
                 for uid in _undo_stacks[self.board_id]:
+                    _undo_stacks[self.board_id][uid]["undo"] = []
                     _undo_stacks[self.board_id][uid]["redo"] = []
+            
+            deleted_ids = await self.delete_activities_after_sequence(sequence)
             await self.apply_snapshot(data["snapshot"])
-            return
 
+            if self.board_id in _undo_stacks:
+                for uid in _undo_stacks[self.board_id]:
+                    _undo_stacks[self.board_id][uid]["undo"] = await self.load_user_undo_stack(uid)
+            
+            restore_message = {
+                "type": "restore_snapshot",
+                "snapshot": data["snapshot"],
+                "deleted_ids": deleted_ids,
+            }
+            await self.send(text_data=json.dumps(restore_message))
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "board_event_others", "message": restore_message, "sender_channel": self.channel_name}
+            )
+            return
+        
         tracked = {
             "create_shape", "delete_shape", "delete_many",
             "move_shape", "move_many", "resize_shape", "resize_many",
@@ -231,7 +252,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
                         "locked": obj_data.get("locked", False), "data": obj_data.get("data", {}),
                     }
                 )
-            return {"type": "delete_many", "objects": diff["objects"]}
+            return {"type": "create_many", "objects": diff["objects"]}
 
         if diff_type == "move":
             BoardObject.objects.filter(board=board, id=diff["id"]).update(
@@ -441,3 +462,20 @@ class BoardConsumer(AsyncWebsocketConsumer):
             for activity in activities
             if activity.diff is not None
         ]
+    
+
+    @database_sync_to_async
+    def delete_activities_after_sequence(self, sequence: int):
+        from boards.models import Board
+        from activity.models import BoardActivity
+        try:
+            board = Board.objects.get(public_id=self.board_id)
+        except Board.DoesNotExist:
+            return []
+        qs = BoardActivity.objects.filter(
+            board=board,
+            sequence__gt=sequence
+        )
+        deleted_ids = [str(id) for id in qs.values_list("id", flat=True)]
+        qs.delete()
+        return deleted_ids
