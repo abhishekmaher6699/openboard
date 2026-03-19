@@ -67,6 +67,10 @@ export default function useBoardSocket({
 
       if (data.type === "restore_snapshot") {
         onRestoreRef.current?.(data.snapshot, data.deleted_ids ?? []);
+
+        if (data.activity) {
+          onActivityRef.current?.(data.activity, [])
+        }
         return;
       }
 

@@ -120,7 +120,6 @@ class BoardConsumer(AsyncWebsocketConsumer):
         if data["type"] == "restore_snapshot":
             sequence = data.get("sequence", 0)
             
-            # clear ALL undo and redo stacks for all users
             if self.board_id in _undo_stacks:
                 for uid in _undo_stacks[self.board_id]:
                     _undo_stacks[self.board_id][uid]["undo"] = []
@@ -132,18 +131,29 @@ class BoardConsumer(AsyncWebsocketConsumer):
             if self.board_id in _undo_stacks:
                 for uid in _undo_stacks[self.board_id]:
                     _undo_stacks[self.board_id][uid]["undo"] = await self.load_user_undo_stack(uid)
-            
+
+            # save restore activity — no diff, not undoable
+            restore_activity = await self.save_restore_activity(user)
+
             restore_message = {
                 "type": "restore_snapshot",
                 "snapshot": data["snapshot"],
                 "deleted_ids": deleted_ids,
+                "activity": {
+                    "id": str(restore_activity.id),
+                    "user": {"id": user.id, "username": user.username},
+                    "action_type": "restore",
+                    "diff": None,
+                    "sequence": restore_activity.sequence,
+                    "created_at": restore_activity.created_at.isoformat(),
+                } if restore_activity else None,
             }
             await self.send(text_data=json.dumps(restore_message))
             await self.channel_layer.group_send(
                 self.group_name,
                 {"type": "board_event_others", "message": restore_message, "sender_channel": self.channel_name}
             )
-            return
+            return 
         
         tracked = {
             "create_shape", "delete_shape", "delete_many",
@@ -479,3 +489,26 @@ class BoardConsumer(AsyncWebsocketConsumer):
         deleted_ids = [str(id) for id in qs.values_list("id", flat=True)]
         qs.delete()
         return deleted_ids
+    
+
+    @database_sync_to_async
+    def save_restore_activity(self, user):
+        from boards.models import Board
+        from activity.models import BoardActivity
+        try:
+            board = Board.objects.get(public_id=self.board_id)
+        except Board.DoesNotExist:
+            return None
+        with transaction.atomic():
+            board_locked = Board.objects.select_for_update().get(public_id=self.board_id)
+            max_seq = BoardActivity.objects.filter(board=board_locked).aggregate(
+                Max("sequence")
+            )["sequence__max"] or 0
+            return BoardActivity.objects.create(
+                board=board_locked,
+                user=user,
+                action_type="restore",
+                payload={},
+                diff=None,
+                sequence=max_seq + 1,
+            )

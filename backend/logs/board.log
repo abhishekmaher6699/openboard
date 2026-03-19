@@ -555,3 +555,10 @@ receive: type=delete_shape user=abhishek is_authenticated=True
 receive: type=move_shape user=ishita is_authenticated=True
 receive: type=create_shape user=ishita is_authenticated=True
 receive: type=restore_snapshot user=abhishek is_authenticated=True
+receive: type=create_shape user=ishita is_authenticated=True
+receive: type=create_shape user=ishita is_authenticated=True
+receive: type=move_shape user=ishita is_authenticated=True
+receive: type=move_shape user=ishita is_authenticated=True
+receive: type=undo user=ishita is_authenticated=True
+receive: type=undo user=ishita is_authenticated=True
+receive: type=restore_snapshot user=ishita is_authenticated=True

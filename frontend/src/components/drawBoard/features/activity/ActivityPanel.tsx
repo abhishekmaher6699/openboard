@@ -36,6 +36,7 @@ const ACTION_LABELS: Record<string, string> = {
   align_text: "changed alignment",
   font_family: "changed font",
   text_color: "changed text color",
+  restore: "restored the board",
 };
 
 function groupActivities(activities: BoardActivity[]) {
@@ -48,7 +49,8 @@ function groupActivities(activities: BoardActivity[]) {
       last[0].user?.id === activity.user?.id &&
       last[0].action_type === activity.action_type &&
       new Date(activity.created_at).getTime() -
-        new Date(last[last.length - 1].created_at).getTime() < 5000
+        new Date(last[last.length - 1].created_at).getTime() <
+        5000
     ) {
       last.push(activity);
     } else {
@@ -59,7 +61,10 @@ function groupActivities(activities: BoardActivity[]) {
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatDate(iso: string) {
@@ -106,11 +111,6 @@ export default function ActivityPanel({
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
-  // current state is active when not in preview and cursor is at latest activity
-  const isCurrentStateActive = ready &&
-    !activeSnapshot &&
-    currentActivityId === (activities[activities.length - 1]?.id ?? null);
-
   // reverse for display — latest first
   const groups = groupActivities([...activities].reverse());
 
@@ -149,36 +149,18 @@ export default function ActivityPanel({
 
       <div className="flex-1 overflow-y-auto py-2">
         {loading && (
-          <div className="py-6 text-center text-sm text-gray-400">Loading...</div>
+          <div className="py-6 text-center text-sm text-gray-400">
+            Loading...
+          </div>
         )}
 
         {!loading && activities.length === 0 && (
-          <div className="py-6 text-center text-sm text-gray-400">No activity yet</div>
+          <div className="py-6 text-center text-sm text-gray-400">
+            No activity yet
+          </div>
         )}
 
-        {/* Current state entry — always at top */}
-        {/* <div
-          className={`border-b border-slate-100 px-4 py-2.5 flex items-center gap-2.5 cursor-pointer transition-colors ${
-            isCurrentStateActive ? "bg-blue-50" : "hover:bg-gray-50"
-          }`}
-          onClick={() => { if (activeSnapshot) exitPreview(); }}
-        >
-          <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
-            <span className="text-white text-[10px] font-semibold">●</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] text-gray-900 font-medium">Current state</div>
-            <div className="text-[11px] text-gray-400 mt-0.5">Live board</div>
-          </div>
-          {isCurrentStateActive && (
-            <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-medium">
-              viewing
-            </span>
-          )}
-        </div> */}
-
         {groups.map((group, groupIdx) => {
-
           const first = group[0];
           const last = group[group.length - 1];
           const isExpanded = expandedGroups.has(groupIdx);
@@ -192,15 +174,18 @@ export default function ActivityPanel({
               className={`border-b border-slate-100 ${isActive ? "bg-blue-50" : ""}`}
             >
               <div
-                className={`px-4 py-2.5 flex items-start gap-2.5 cursor-pointer transition-colors ${
-                  isActive ? "hover:bg-blue-100" : "hover:bg-gray-50"
-                }`}
+                className={`px-4 py-2.5 flex items-start gap-2.5 transition-colors ${
+                  first.action_type === "restore"
+                    ? "cursor-default bg-gray-200"
+                    : "cursor-pointer hover:bg-gray-50"
+                } ${isActive ? "hover:bg-blue-100" : ""}`}
                 onClick={() => {
+                  if (first.action_type === "restore") return; // ← skip preview
                   const snapshot = replayToActivity(activities, last.id);
                   onPreview(
                     snapshot,
                     `${formatDate(last.created_at)} ${formatTime(last.created_at)}`,
-                    last.sequence
+                    last.sequence,
                   );
                 }}
               >
@@ -212,15 +197,17 @@ export default function ActivityPanel({
                 >
                   {first.user?.username?.[0]?.toUpperCase() ?? "?"}
                 </div>
-                
 
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] text-gray-900">
-                    <span className="font-medium">{first.user?.username ?? "Unknown"}</span>{" "}
+                    <span className="font-medium">
+                      {first.user?.username ?? "Unknown"}
+                    </span>{" "}
                     {isMultiple ? `${label} (×${group.length})` : label}
                   </div>
                   <div className="text-[11px] text-gray-400 mt-0.5">
-                    {formatDate(first.created_at)} · {formatTime(first.created_at)}
+                    {formatDate(first.created_at)} ·{" "}
+                    {formatTime(first.created_at)}
                   </div>
                   {/* <div className="text-black">
                     {first.id}
@@ -233,15 +220,17 @@ export default function ActivityPanel({
                       viewing
                     </span>
                   )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmingId(`${groupIdx}`);
-                    }}
-                    className="text-[11px] px-1.5 py-0.5 border border-slate-200 rounded cursor-pointer bg-white text-gray-500 hover:bg-gray-50 transition-colors"
-                  >
-                    Restore
-                  </button>
+                  {first.action_type !== "restore" && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmingId(`${groupIdx}`);
+                      }}
+                      className="text-[11px] px-1.5 py-0.5 border border-slate-200 rounded cursor-pointer bg-white text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      Restore
+                    </button>
+                  )}
                   {isMultiple && (
                     <button
                       onClick={(e) => {
@@ -263,15 +252,20 @@ export default function ActivityPanel({
                     <div
                       key={activity.id}
                       onClick={() => {
-                        const snapshot = replayToActivity(activities, activity.id);
+                        const snapshot = replayToActivity(
+                          activities,
+                          activity.id,
+                        );
                         onPreview(
                           snapshot,
                           `${formatDate(activity.created_at)} ${formatTime(activity.created_at)}`,
-                          activity.sequence
+                          activity.sequence,
                         );
                       }}
                       className={`pl-[54px] pr-4 py-1.5 text-xs text-gray-500 cursor-pointer flex justify-between items-center transition-colors ${
-                        isActiveSub ? "bg-blue-100" : "bg-gray-50 hover:bg-gray-100"
+                        isActiveSub
+                          ? "bg-blue-100"
+                          : "bg-gray-50 hover:bg-gray-100"
                       }`}
                     >
                       <div className="flex items-center gap-1.5">
@@ -282,7 +276,9 @@ export default function ActivityPanel({
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px]">{formatTime(activity.created_at)}</span>
+                      <span className="text-[11px]">
+                        {formatTime(activity.created_at)}
+                      </span>
                     </div>
                   );
                 })}
@@ -292,7 +288,9 @@ export default function ActivityPanel({
                   className="mx-4 mb-2.5 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-[13px] text-yellow-900"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="mb-2 font-medium">Restore board to this state?</div>
+                  <div className="mb-2 font-medium">
+                    Restore board to this state?
+                  </div>
                   <div className="text-xs mb-2.5 text-yellow-800">
                     This will restore the board for all users.
                   </div>

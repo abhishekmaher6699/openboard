@@ -19,6 +19,9 @@ export function useBoardActivity(
     null,
   );
 
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
+
   useEffect(() => {
     apiRequest<BoardActivity[]>(
       `/boards/${boardId}/activities/?limit=${ACTIVITY_LIMIT}`,
@@ -51,8 +54,11 @@ export function useBoardActivity(
 
       const next = [...filtered, activity].slice(-ACTIVITY_LIMIT);
 
-      // ✅ only move cursor if this activity is mine
-      if (Number(activity.user?.id) === currentUserId) {
+      console.log(activity.action_type);
+      if (
+        Number(activity.user?.id) === currentUserId &&
+        activity.action_type !== "restore"
+      ) {
         cursorSequenceRef.current = activity.sequence ?? 0;
         setCurrentActivityId(activity.id);
       }
@@ -92,17 +98,25 @@ export function useBoardActivity(
     });
   };
 
-const onRestoreApplied = (deletedIds: string[] = []) => {
-  setActivities((prev) => {
-    const filtered = deletedIds.length
-      ? prev.filter((a) => !deletedIds.includes(a.id))
-      : prev;
-    const last = filtered[filtered.length - 1];
-    cursorSequenceRef.current = last?.sequence ?? 0;
-    setCurrentActivityId(last?.id ?? null);
-    return filtered;
-  });
-};
+  const onRestoreApplied = (deletedIds: string[] = []) => {
+    setActivities((prev) => {
+      const filtered = deletedIds.length
+        ? prev.filter((a) => !deletedIds.includes(a.id))
+        : prev;
+
+      // find last non-restore activity by this user
+      const myLast = [...filtered]
+        .reverse()
+        .find(
+          (a) => Number(a.user?.id) === currentUserIdRef.current && a.action_type !== "restore",
+        );
+
+      cursorSequenceRef.current = myLast?.sequence ?? 0;
+      setCurrentActivityId(myLast?.id ?? null);
+      return filtered;
+    });
+  };
+  
   return {
     activities,
     loading,
