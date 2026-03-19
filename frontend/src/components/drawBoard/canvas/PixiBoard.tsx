@@ -5,15 +5,19 @@ import useBoardSocket from "../../../hooks/websockets/useBoardSocket";
 import FloatingToolbar from "../controls/FloatingToolbar";
 import ActivityPanel from "../activity/ActivityPanel";
 import PreviewBanner from "../activity/Previewbanner";
+import ActiveUsers from "../presence/ActiveUsers";
+import RemoteCursors from "../presence/RemoteCursors";
 import { useFloatingToolbar } from "../../../hooks/board/controls/useFloatingtoolbar";
 import { useBoardObjects } from "../../../hooks/board/interactions/useBoardObjects";
 import { useBoardToolbar } from "../../../hooks/board/controls/useBoardtoolbar";
 import { useBoardActivity } from "../../../hooks/board/activity/useBoardActivity";
 import { useActivityPreview } from "../../../hooks/board/activity/useActivityPreview";
 import { useUndoRedo } from "../../../hooks/board/interactions/useUndoRedo";
+import { usePresence } from "../../../hooks/board/presence/UsePresence";
 import type { BoardObject, Tool } from "../../../types/board";
 import { getBoardObjects } from "../../../api/boardObjects";
 import BoardControls from "../controls/BoardControls";
+import RemoteSelections from "../presence/RemoteSelection";
 
 export default function PixiBoard({ boardId }: { boardId: string }) {
   const [objects, setObjects] = useState<BoardObject[]>([]);
@@ -22,7 +26,6 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activityPanelOpen, setActivityPanelOpen] = useState(false);
   const [strokeWidth, setStrokeWidth] = useState(3);
-
 
   const viewportRef = useRef<any>(null);
   const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
@@ -51,6 +54,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     update: updateToolbar,
     hide: hideToolbar,
   } = useFloatingToolbar(viewportRef, objectMapRef);
+
   const {
     isPreviewMode,
     previewObjects,
@@ -83,10 +87,9 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     onRestore: (snapshot, deletedIds) => {
       setObjects(snapshot);
       exitPreview();
-      clearSelectionRef.current?.()
+      clearSelectionRef.current?.();
       hideToolbar();
       onRestoreApplied(deletedIds);
-
     },
     onUndoApplied: (cursorSequence, userId) => {
       onUndoApplied(cursorSequence, Number(userId), Number(currentUserId));
@@ -94,6 +97,13 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     onRedoApplied: (cursorSequence, userId) => {
       onRedoApplied(cursorSequence, Number(userId), Number(currentUserId));
     },
+  });
+
+  const { users, otherUsers } = usePresence({
+    socketRef: socket.socketRef,
+    currentUserId,
+    onMessage: socket.registerMessageHandler,
+    viewportRef, // ✅ ADD THIS
   });
 
   const { sendRestoreSnapshot } = socket;
@@ -135,7 +145,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
     hideToolbar,
     sendCreate: socket.sendCreate,
     sendUpdate: socket.sendUpdate,
-    sendUpdateMany: socket.sendUpdateMany
+    sendUpdateMany: socket.sendUpdateMany,
   });
 
   useUndoRedo({
@@ -151,9 +161,21 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
   }, [isPreviewMode]);
 
   useEffect(() => {
+    const ws = socket.socketRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    ws.send(
+      JSON.stringify({
+        type: "selection_update",
+        selected_ids: selectedIds,
+      }),
+    );
+  }, [selectedIds]);
+
+  useEffect(() => {
     if (selectedIds.length === 0) return;
-    const objectIds = new Set(objects.map(o => o.id));
-    const missingIds = selectedIds.filter(id => !objectIds.has(id));
+    const objectIds = new Set(objects.map((o) => o.id));
+    const missingIds = selectedIds.filter((id) => !objectIds.has(id));
     if (missingIds.length > 0) {
       clearSelectionRef.current?.();
       hideToolbar();
@@ -183,6 +205,16 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         />
       )}
 
+      {/* Active users top-left */}
+      <ActiveUsers users={users} currentUserId={currentUserId} />
+      <RemoteSelections
+        users={otherUsers}
+        objects={objects}
+        viewportRef={viewportRef}
+      />
+      {/* Remote cursors */}
+      <RemoteCursors users={otherUsers} viewportRef={viewportRef} />
+
       <BoardControls
         tool={tool}
         setTool={setTool}
@@ -194,7 +226,6 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
         onRedo={socket.sendRedo}
         strokeWidth={strokeWidth}
         setStrokeWidth={setStrokeWidth}
-
       />
 
       <FloatingToolbar
@@ -252,7 +283,7 @@ export default function PixiBoard({ boardId }: { boardId: string }) {
           objectMapRef={objectMapRef}
           clearSelectionRef={clearSelectionRef}
           previewMode={isPreviewMode}
-          color = {isPreviewMode ? "#ff0000" : color}
+          color={isPreviewMode ? "#ff0000" : color}
           strokeWidth={strokeWidth}
         />
       </Application>

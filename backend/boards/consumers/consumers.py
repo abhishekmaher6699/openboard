@@ -16,6 +16,9 @@ logger = logging.getLogger("board.consumer")
 
 _undo_stacks: dict = {}
 
+# Track active users per board: { board_id: { channel_name: { user_id, username } } }
+_active_users: dict = {}
+
 TRACKED = {
     "create_shape", "delete_shape", "delete_many",
     "move_shape", "move_many", "resize_shape", "resize_many",
@@ -34,6 +37,10 @@ def get_user_stacks(board_id: str, user_id: int):
     return _undo_stacks[board_id][user_id]
 
 
+def get_active_users(board_id: str):
+    return list(_active_users.get(board_id, {}).values())
+
+
 class BoardConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
@@ -43,13 +50,58 @@ class BoardConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
+        print("CONNECTED:", self.channel_name)
+
         if self.user and self.user.is_authenticated:
             stacks = get_user_stacks(self.board_id, self.user.id)
             if not stacks["undo"]:
                 stacks["undo"] = await load_user_undo_stack(self.board_id, self.user.id)
 
+            # Register user as active
+            if self.board_id not in _active_users:
+                _active_users[self.board_id] = {}
+            _active_users[self.board_id][self.channel_name] = {
+                "user_id": self.user.id,
+                "username": self.user.username,
+            }
+
+            # Send current user list to the joining user
+            await self.send(text_data=json.dumps({
+                "type": "presence_init",
+                "users": get_active_users(self.board_id),
+            }))
+
+            # Broadcast join to everyone else
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "board_event_others",
+                    "message": {
+                        "type": "user_joined",
+                        "user": {"user_id": self.user.id, "username": self.user.username},
+                    },
+                    "sender_channel": self.channel_name,
+                }
+            )
+
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+        if self.user and self.user.is_authenticated:
+            if self.board_id in _active_users:
+                _active_users[self.board_id].pop(self.channel_name, None)
+
+            # Broadcast leave to everyone
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "board_event",
+                    "message": {
+                        "type": "user_left",
+                        "user_id": self.user.id,
+                    },
+                }
+            )
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -58,6 +110,38 @@ class BoardConsumer(AsyncWebsocketConsumer):
 
         user = self.scope.get("user")
         msg_type = data["type"]
+
+        # Handle cursor moves — broadcast to others only, no DB
+        if msg_type == "cursor_move":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "board_event_others",
+                    "message": {
+                        "type": "cursor_move",
+                        "user_id": user.id if user and user.is_authenticated else None,
+                        "x": data.get("x"),
+                        "y": data.get("y"),
+                    },
+                    "sender_channel": self.channel_name,
+                }
+            )
+            return
+        
+        if msg_type == "selection_update":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "board_event_others",
+                    "message": {
+                        "type": "selection_update",
+                        "user_id": user.id if user.is_authenticated else None,
+                        "selected_ids": data.get("selected_ids", []),
+                    },
+                    "sender_channel": self.channel_name,
+                }
+            )
+            return
 
         if msg_type == "undo":
             await self._handle_undo(user)
@@ -135,7 +219,6 @@ class BoardConsumer(AsyncWebsocketConsumer):
     async def _handle_restore(self, data, user):
         sequence = data.get("sequence", 0)
 
-        # clear all stacks
         if self.board_id in _undo_stacks:
             for uid in _undo_stacks[self.board_id]:
                 _undo_stacks[self.board_id][uid] = {"undo": [], "redo": []}
@@ -143,7 +226,6 @@ class BoardConsumer(AsyncWebsocketConsumer):
         deleted_ids = await delete_activities_after_sequence(self.board_id, sequence)
         await apply_snapshot_to_db(self.board_id, data["snapshot"])
 
-        # rebuild all users' undo stacks
         if self.board_id in _undo_stacks:
             for uid in _undo_stacks[self.board_id]:
                 _undo_stacks[self.board_id][uid]["undo"] = await load_user_undo_stack(self.board_id, uid)
