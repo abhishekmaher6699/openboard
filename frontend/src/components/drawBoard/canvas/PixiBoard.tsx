@@ -158,6 +158,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
     resizeManyObjects,
     updateColor,
     updateText,
+    updateStrokeWidth
   } = useBoardObjects({ boardId, color, objects, setObjects, ...socket });
 
   const {
@@ -173,6 +174,8 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
     handleAlign,
     handleFontFamily,
     handleTextColor,
+    handleStrokeWidth,
+    handleStrokeWidthPreview
   } = useBoardToolbar({
     boardId,
     selectedIds,
@@ -186,6 +189,8 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
     sendCreate: socket.sendCreate,
     sendUpdate: socket.sendUpdate,
     sendUpdateMany: socket.sendUpdateMany,
+    updateStrokeWidth
+    
   });
 
   useUndoRedo({
@@ -278,6 +283,8 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
         onAlign={handleAlign}
         onFontFamily={handleFontFamily}
         onTextColor={handleTextColor}
+        onStrokeWidth={handleStrokeWidth}
+        onStrokeWidthPreview={handleStrokeWidthPreview}
       />
 
       <ActivityPanel

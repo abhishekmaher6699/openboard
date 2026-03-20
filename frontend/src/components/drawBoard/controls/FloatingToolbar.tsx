@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Copy,
   BringToFront,
@@ -33,10 +33,14 @@ const FONTS = [
   { label: "Comic Sans MS", value: "Comic Sans MS, cursive" },
 ];
 
-const ALIGN_OPTIONS: Array<{ value: "left" | "center" | "right"; icon: React.ReactNode; title: string }> = [
-  { value: "left",   icon: <AlignLeft size={14} />,   title: "Align left"   },
+const ALIGN_OPTIONS: Array<{
+  value: "left" | "center" | "right";
+  icon: React.ReactNode;
+  title: string;
+}> = [
+  { value: "left", icon: <AlignLeft size={14} />, title: "Align left" },
   { value: "center", icon: <AlignCenter size={14} />, title: "Align center" },
-  { value: "right",  icon: <AlignRight size={14} />,  title: "Align right"  },
+  { value: "right", icon: <AlignRight size={14} />, title: "Align right" },
 ];
 
 export default function FloatingToolbar({
@@ -54,6 +58,8 @@ export default function FloatingToolbar({
   onAlign,
   onFontFamily,
   onTextColor,
+  onStrokeWidth,
+  onStrokeWidthPreview,
 }: FloatingToolBarProps) {
   if (!toolbar.visible) return null;
 
@@ -70,20 +76,58 @@ export default function FloatingToolbar({
 
   const hasText = toolbar.types.some((t) => t === "text" || t === "sticky");
   const firstTextObj = objects.find(
-    (o) => toolbar.ids.includes(o.id) && (o.type === "text" || o.type === "sticky")
+    (o) =>
+      toolbar.ids.includes(o.id) && (o.type === "text" || o.type === "sticky"),
   );
   const textStyle = firstTextObj?.data ?? {};
   const currentAlign = textStyle.align ?? "center";
 
+  // detect if any selected object is a path
+  const hasPath = objects
+    .filter((o) => toolbar.ids.includes(o.id))
+    .some((o) => o.type === "path");
+
+  // get current strokeWidth from first selected path
+  const pathStrokeWidth =
+    objects.find((o) => toolbar.ids.includes(o.id) && o.type === "path")?.data
+      ?.strokeWidth ?? 3;
+
+  const [localStrokeWidth, setLocalStrokeWidth] = useState(pathStrokeWidth);
+  const originalStrokeWidthRef = useRef(pathStrokeWidth);
+  const prevIdsRef = useRef(toolbar.ids);
+
+  // only reset when selection actually changes, not when value changes
+  useEffect(() => {
+    const idsChanged =
+      toolbar.ids.length !== prevIdsRef.current.length ||
+      toolbar.ids.some((id, i) => id !== prevIdsRef.current[i]);
+
+    if (idsChanged) {
+      originalStrokeWidthRef.current = pathStrokeWidth;
+      prevIdsRef.current = toolbar.ids;
+    }
+
+    setLocalStrokeWidth(pathStrokeWidth);
+  }, [pathStrokeWidth, toolbar.ids]);
+
   const TOOLBAR_WIDTH = 460;
   const clampedLeft = Math.min(
     width - TOOLBAR_WIDTH / 2 - 8,
-    Math.max(TOOLBAR_WIDTH / 2 + 8, toolbar.x)
+    Math.max(TOOLBAR_WIDTH / 2 + 8, toolbar.x),
   );
 
   const positionStyle = isMobile
-    ? { bottom: 110, left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100vw - 16px)" }
-    : { left: clampedLeft, top: Math.max(8, toolbar.y), transform: "translateX(-50%)" };
+    ? {
+        bottom: 110,
+        left: "50%",
+        transform: "translateX(-50%)",
+        maxWidth: "calc(100vw - 16px)",
+      }
+    : {
+        left: clampedLeft,
+        top: Math.max(8, toolbar.y),
+        transform: "translateX(-50%)",
+      };
 
   return (
     <div
@@ -123,7 +167,9 @@ export default function FloatingToolbar({
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 {FONTS.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
                 ))}
               </select>
 
@@ -139,17 +185,27 @@ export default function FloatingToolbar({
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 {FONT_SIZES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
 
               <Divider />
 
-              <ToolbarButton onClick={onBold} title="Bold" active={textStyle.bold}>
+              <ToolbarButton
+                onClick={onBold}
+                title="Bold"
+                active={textStyle.bold}
+              >
                 <Bold size={14} />
               </ToolbarButton>
 
-              <ToolbarButton onClick={onItalic} title="Italic" active={textStyle.italic}>
+              <ToolbarButton
+                onClick={onItalic}
+                title="Italic"
+                active={textStyle.italic}
+              >
                 <Italic size={14} />
               </ToolbarButton>
 
@@ -168,41 +224,54 @@ export default function FloatingToolbar({
 
           {isMobile && (
             <div className="relative">
-              <ToolbarButton onClick={() => setMoreOpen(o => !o)} title="More" active={moreOpen}>
+              <ToolbarButton
+                onClick={() => setMoreOpen((o) => !o)}
+                title="More"
+                active={moreOpen}
+              >
                 <Ellipsis size={14} />
               </ToolbarButton>
 
               {moreOpen && (
                 <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-lg shadow-lg p-2 z-10001 w-48">
-
                   <div className="mb-2">
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">Font</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">
+                      Font
+                    </p>
                     <select
                       value={textStyle.fontFamily ?? "sans-serif"}
                       onChange={(e) => onFontFamily(e.target.value)}
                       className="w-full text-xs border border-slate-200 dark:border-neutral-700 rounded px-1 py-1 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200"
                     >
                       {FONTS.map((f) => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
+                        <option key={f.value} value={f.value}>
+                          {f.label}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="mb-2">
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">Size</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">
+                      Size
+                    </p>
                     <select
                       value={textStyle.fontSize ?? 16}
                       onChange={(e) => onFontSize(Number(e.target.value))}
                       className="w-full text-xs border border-slate-200 dark:border-neutral-700 rounded px-1 py-1 bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-200"
                     >
                       {FONT_SIZES.map((s) => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="mb-2">
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">Color</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">
+                      Color
+                    </p>
                     <div className="px-1">
                       <TextColorPicker
                         value={firstTextObj?.data?.textColor ?? "#1a1a1a"}
@@ -214,10 +283,18 @@ export default function FloatingToolbar({
                   <div className="h-px bg-slate-100 dark:bg-neutral-700 mb-2" />
 
                   <div className="flex items-center gap-1 px-1">
-                    <ToolbarButton onClick={onBold} title="Bold" active={textStyle.bold}>
+                    <ToolbarButton
+                      onClick={onBold}
+                      title="Bold"
+                      active={textStyle.bold}
+                    >
                       <Bold size={14} />
                     </ToolbarButton>
-                    <ToolbarButton onClick={onItalic} title="Italic" active={textStyle.italic}>
+                    <ToolbarButton
+                      onClick={onItalic}
+                      title="Italic"
+                      active={textStyle.italic}
+                    >
                       <Italic size={14} />
                     </ToolbarButton>
                     {ALIGN_OPTIONS.map(({ value, icon, title }) => (
@@ -231,10 +308,75 @@ export default function FloatingToolbar({
                       </ToolbarButton>
                     ))}
                   </div>
+
+                  {hasPath && (
+                    <div className="mt-2">
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1 px-1">
+                        Stroke width
+                      </p>
+                      <div className="flex items-center gap-1.5 px-1">
+                        <input
+                          type="range"
+                          min={1}
+                          max={20}
+                          value={localStrokeWidth}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setLocalStrokeWidth(val);
+                            onStrokeWidthPreview(val);
+                          }}
+                          onPointerUp={(e) => {
+                            e.stopPropagation(); // ← add this
+                            const val = Number(
+                              (e.target as HTMLInputElement).value,
+                            );
+                            onStrokeWidth(val, originalStrokeWidthRef.current); // pass both new AND original
+                            originalStrokeWidthRef.current = val; // update after commit
+                          }}
+                          className="w-16 h-1.5 accent-blue-500 cursor-pointer"
+                          onPointerDown={(e) => e.stopPropagation()}
+                        />
+                        <span className="text-xs text-gray-400 dark:text-gray-500 w-4 tabular-nums">
+                          {pathStrokeWidth}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
+        </>
+      )}
+
+      {hasPath && (
+        <>
+          <Divider />
+          <div className="flex items-center gap-1.5 px-1">
+            <span className="text-xs text-gray-400 dark:text-gray-500">W</span>
+            <input
+              type="range"
+              min={1}
+              max={20}
+              value={localStrokeWidth}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setLocalStrokeWidth(val);
+                onStrokeWidthPreview(val);
+              }}
+              onPointerUp={(e) => {
+                e.stopPropagation();
+                const val = Number((e.target as HTMLInputElement).value);
+                onStrokeWidth(val, originalStrokeWidthRef.current); // pass both new AND original
+                originalStrokeWidthRef.current = val; // update after commit
+              }}
+              className="w-16 h-1.5 accent-blue-500 cursor-pointer"
+              onPointerDown={(e) => e.stopPropagation()}
+            />
+            <span className="text-xs text-gray-400 dark:text-gray-500 w-4 tabular-nums">
+              {pathStrokeWidth}
+            </span>
+          </div>
         </>
       )}
 
@@ -256,8 +398,8 @@ function ToolbarButton({ onClick, title, children, active, danger }: any) {
         active
           ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300"
           : danger
-          ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
-          : "text-gray-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-neutral-700"
+            ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
+            : "text-gray-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-neutral-700"
       }`}
     >
       {children}
@@ -268,4 +410,3 @@ function ToolbarButton({ onClick, title, children, active, danger }: any) {
 function Divider() {
   return <div className="w-px h-5 bg-slate-200 dark:bg-neutral-700 mx-0.5" />;
 }
-

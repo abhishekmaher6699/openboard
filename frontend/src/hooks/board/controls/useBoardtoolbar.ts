@@ -5,8 +5,6 @@ import type { UseBoardToolbarProps } from "../../../types/canvas";
 const STEP = 1000;
 const RENORMALIZE_EPSILON = 1;
 
-
-
 export function useBoardToolbar({
   boardId,
   selectedIds,
@@ -19,6 +17,7 @@ export function useBoardToolbar({
   deleteManyObjects,
   clearSelectionRef,
   hideToolbar,
+  updateStrokeWidth
 }: UseBoardToolbarProps) {
   const getSorted = () =>
     [...objectsRef.current].sort((a, b) => (a.z_index ?? 0) - (b.z_index ?? 0));
@@ -124,7 +123,7 @@ export function useBoardToolbar({
   };
 
   const handleDelete = () => {
-     console.log("🗑️ handleDelete called, selectedIds:", selectedIds);
+    console.log("🗑️ handleDelete called, selectedIds:", selectedIds);
     if (selectedIds.length === 1) deleteObject(selectedIds[0]);
     else if (selectedIds.length > 1) deleteManyObjects(selectedIds);
     clearSelectionRef.current?.();
@@ -153,6 +152,27 @@ export function useBoardToolbar({
     }
   };
 
+  const handleStrokeWidthPreview = (strokeWidth: number) => {
+    const pathIds = selectedIds.filter(
+      (id) => objectsRef.current.find((o) => o.id === id)?.type === "path",
+    );
+    if (pathIds.length === 0) return;
+    setObjects((prev) =>
+      prev.map((obj) =>
+        pathIds.includes(obj.id)
+          ? { ...obj, data: { ...obj.data, strokeWidth } }
+          : obj,
+      ),
+    );
+  };
+
+const handleStrokeWidth = (strokeWidth: number, prevStrokeWidth: number) => {
+  const pathIds = selectedIds.filter(
+    (id) => objectsRef.current.find((o) => o.id === id)?.type === "path",
+  );
+  if (pathIds.length === 0) return;
+  updateStrokeWidth(pathIds, strokeWidth, prevStrokeWidth);
+};
 
   const STYLE_DEFAULTS: Record<string, any> = {
     bold: false,
@@ -248,5 +268,7 @@ export function useBoardToolbar({
     handleAlign,
     handleFontFamily,
     handleTextColor,
+    handleStrokeWidth,
+    handleStrokeWidthPreview,
   };
 }

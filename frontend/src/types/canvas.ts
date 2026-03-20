@@ -189,6 +189,7 @@ export type UseBoardToolbarProps = {
   deleteManyObjects: (ids: string[]) => void;
   clearSelectionRef: React.RefObject<() => void>;
   hideToolbar: () => void;
+  updateStrokeWidth: (ids: string[], strokeWidth: number, prevStrokeWidth: number) => Promise<void>;
 };
 
 export type FloatingToolBarProps = {
@@ -206,4 +207,8 @@ export type FloatingToolBarProps = {
   onAlign: (align: "left" | "center" | "right") => void
   onFontFamily: (font: string) => void
   onTextColor: (color: string) => void
+  onStrokeWidth: (width: number, prevWidth: number) => void;
+  onStrokeWidthPreview: (width: number) => void;
+
+
 }

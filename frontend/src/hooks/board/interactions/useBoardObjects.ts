@@ -275,6 +275,62 @@ export function useBoardObjects({
     }
   };
 
+  const updateStrokeWidth = async (
+    ids: string[],
+    strokeWidth: number,
+    prevStrokeWidth: number,
+  ) => {
+
+    console.log("updateStrokeWidth called", { ids, strokeWidth, prevStrokeWidth });
+    
+    const snapshots = ids.map((id) => ({
+      id,
+      existing: objectsRef.current.find((o) => o.id === id)?.data ?? {},
+      prevStrokeWidth, // use the passed-in value, not from ref
+    }));
+
+    setObjects((prev) =>
+      prev.map((obj) =>
+        ids.includes(obj.id)
+          ? { ...obj, data: { ...obj.data, strokeWidth } }
+          : obj,
+      ),
+    );
+
+    if (ids.length === 1) {
+      const { id } = snapshots[0];
+      sendUpdate(id, { data: { strokeWidth } }, "update_object", {
+        type: "update",
+        id,
+        from: { data: { strokeWidth: prevStrokeWidth } },
+        to: { data: { strokeWidth } },
+      });
+    } else {
+      const diff: BoardDiff = {
+        type: "update_many",
+        updates: snapshots.map(({ id }) => ({
+          id,
+          from: { data: { strokeWidth: prevStrokeWidth } },
+          to: { data: { strokeWidth } },
+        })),
+      };
+      sendUpdateMany(
+        snapshots.map(({ id }) => ({ id, changes: { data: { strokeWidth } } })),
+        "update_object",
+        diff,
+      );
+    }
+
+    try {
+      await Promise.all(
+        snapshots.map(({ id, existing }) =>
+          updateObject(boardId, id, { data: { ...existing, strokeWidth } }),
+        ),
+      );
+    } catch (err) {
+      console.error("Stroke width update failed", err);
+    }
+  };
   return {
     objectsRef,
     createNewObject,
@@ -286,5 +342,6 @@ export function useBoardObjects({
     resizeManyObjects,
     updateColor,
     updateText,
+    updateStrokeWidth,
   };
 }

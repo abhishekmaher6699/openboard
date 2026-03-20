@@ -83,7 +83,7 @@ ALLOWED_HOSTS = ["*"]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://10.213.76.170:5173",
+    "http://10.30.0.112:5173",
 
 ]
 

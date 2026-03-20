@@ -100,10 +100,15 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
     const strokeColor = Number(obj.data?.fill ?? "0x000000");
     const strokeWidth = obj.data?.strokeWidth ?? 3;
 
+    const origW = obj.data?.origWidth ?? (points.length >= 4 ? Math.max(...points.filter((_, i) => i % 2 === 0)) : width);
+    const origH = obj.data?.origHeight ?? (points.length >= 4 ? Math.max(...points.filter((_, i) => i % 2 !== 0)) : height);
+    const sx = origW > 0 ? width / origW : 1;
+    const sy = origH > 0 ? height / origH : 1;
+
     if (points.length >= 4) {
-      g.moveTo(points[0], points[1]);
+      g.moveTo(points[0] * sx, points[1] * sy);
       for (let i = 2; i < points.length; i += 2) {
-        g.lineTo(points[i], points[i + 1]);
+        g.lineTo(points[i] * sx, points[i + 1] * sy);
       }
       g.stroke({
         width: strokeWidth,

@@ -131,6 +131,8 @@ export function usePen({
         strokeWidth: strokeWidthRef.current,
         width: bounds.width,
         height: bounds.height,
+        origWidth: bounds.width,
+        origHeight: bounds.height
       });
     };
 
