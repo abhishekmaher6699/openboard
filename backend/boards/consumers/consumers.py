@@ -25,7 +25,7 @@ TRACKED = {
     "update_color", "update_text", "update_object",
     "bring_forward", "send_back", "bring_to_front", "send_to_back",
     "bold_text", "italic_text", "font_size", "align_text",
-    "font_family", "text_color", "update_color_many",
+    "font_family", "text_color", "update_color_many", "update_object_many"
 }
 
 

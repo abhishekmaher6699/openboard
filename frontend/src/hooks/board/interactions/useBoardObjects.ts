@@ -282,7 +282,7 @@ export function useBoardObjects({
   ) => {
 
     console.log("updateStrokeWidth called", { ids, strokeWidth, prevStrokeWidth });
-    
+
     const snapshots = ids.map((id) => ({
       id,
       existing: objectsRef.current.find((o) => o.id === id)?.data ?? {},
@@ -316,7 +316,7 @@ export function useBoardObjects({
       };
       sendUpdateMany(
         snapshots.map(({ id }) => ({ id, changes: { data: { strokeWidth } } })),
-        "update_object",
+        "update_object_many",
         diff,
       );
     }

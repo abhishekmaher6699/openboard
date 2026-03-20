@@ -251,6 +251,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
         users={otherUsers}
         objects={objects}
         viewportRef={viewportRef}
+        isPreviewMode={isPreviewMode}
       />
       {/* Remote cursors */}
       <RemoteCursors users={otherUsers} viewportRef={viewportRef} />

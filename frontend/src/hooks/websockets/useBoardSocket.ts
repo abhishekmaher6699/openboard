@@ -24,6 +24,7 @@ const MANY_UPDATE_TYPES = new Set([
   "align_text",
   "font_family",
   "text_color",
+  "update_object_many"
 ]);
 
 export default function useBoardSocket({

@@ -7,13 +7,18 @@ interface Props {
   users: PresenceUser[];
   objects: BoardObject[];
   viewportRef: React.RefObject<any>;
+  isPreviewMode: boolean
 }
 
 export default function RemoteSelections({
   users,
   objects,
   viewportRef,
+  isPreviewMode
 }: Props) {
+
+  if (isPreviewMode) return null
+  
   const viewport = viewportRef.current;
   if (!viewport) return null;
 

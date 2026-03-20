@@ -311,7 +311,7 @@ def load_user_undo_stack(board_id: str, user_id: int):
             "update_color", "update_text", "update_object",
             "bring_forward", "send_back", "bring_to_front", "send_to_back",
             "bold_text", "italic_text", "font_size", "align_text",
-            "font_family", "text_color",
+            "font_family", "text_color", "update_object_many"
         ]
     ).order_by("sequence")[:50]
     return [
