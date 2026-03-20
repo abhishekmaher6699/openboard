@@ -105,6 +105,7 @@ export type ActivityPanelProps = {
   activeSnapshot: BoardObject[] | null;
   currentActivityId: string | null;
   exitPreview: () => void;
+  objects: BoardObject[];
 };
 
 

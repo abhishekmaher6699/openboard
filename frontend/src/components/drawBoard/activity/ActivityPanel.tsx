@@ -19,6 +19,7 @@ export default function ActivityPanel({
   onRestore,
   activeSnapshot,
   currentActivityId,
+  objects
 }: ActivityPanelProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -98,7 +99,7 @@ export default function ActivityPanel({
                 } ${isActive ? "hover:bg-blue-100 dark:hover:bg-blue-900/40" : ""}`}
                 onClick={() => {
                   if (first.action_type === "restore") return;
-                  const snapshot = replayToActivity(activities, last.id);
+                  const snapshot = replayToActivity(activities, last.id, objects);
                   onPreview(
                     snapshot,
                     `${formatDate(last.created_at)} ${formatTime(
@@ -172,7 +173,8 @@ export default function ActivityPanel({
                       onClick={() => {
                         const snapshot = replayToActivity(
                           activities,
-                          activity.id
+                          activity.id,
+                          objects
                         );
                         onPreview(
                           snapshot,
@@ -217,7 +219,7 @@ export default function ActivityPanel({
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => {
-                        const snapshot = replayToActivity(activities, last.id);
+                        const snapshot = replayToActivity(activities, last.id, objects);
                         onRestore(snapshot, last.sequence);
                         setConfirmingId(null);
                       }}

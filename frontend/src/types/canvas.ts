@@ -85,6 +85,7 @@ export type UseShapeRendererProps = {
   drawSelectionRef: React.RefObject<DrawSelectionFn>
   toolRef: React.RefObject<Tool>
   onTextOpen: (id: string) => void
+  onTextCreate: (x: number, y: number) => void;
   disabled: boolean | undefined
 }
 

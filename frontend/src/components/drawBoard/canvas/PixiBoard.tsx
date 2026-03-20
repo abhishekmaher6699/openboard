@@ -299,6 +299,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
         activeSnapshot={isPreviewMode ? previewObjects : null}
         currentActivityId={isPreviewMode ? null : currentActivityId}
         exitPreview={exitPreview}
+        objects={objects}
       />
 
       <div className="fixed top-16 left-4 z-9999 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-2 shadow-lg">

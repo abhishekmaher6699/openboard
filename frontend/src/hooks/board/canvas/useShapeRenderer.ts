@@ -17,6 +17,7 @@ export function useShapeRenderer({
   drawSelectionRef,
   toolRef,
   onTextOpen,
+  onTextCreate,
   disabled,
 }: UseShapeRendererProps) {
   const interaction = interactionRef.current
@@ -60,7 +61,7 @@ export function useShapeRenderer({
         const { onPointerUp, onPointerDown } = createPointerHandlers(
           obj, container, interaction, viewport,
           objectMapRef, drawSelectionRef, toolRef,
-          onTextOpen, disabledRef
+          onTextOpen, onTextCreate, disabledRef
         )
 
         container.on("pointerup", onPointerUp)
@@ -97,6 +98,7 @@ function createPointerHandlers(
   drawSelectionRef: React.RefObject<any>,
   toolRef: React.RefObject<any>,
   onTextOpen: (id: string) => void,
+  onTextCreate: (x: number, y: number) => void,  // ← add this
   disabledRef: React.RefObject<boolean | undefined>,
 ) {
   let lastUpTime = 0
@@ -113,8 +115,17 @@ function createPointerHandlers(
       viewport.plugins.resume("drag")
       interaction.selected = new Set()
       if (interaction.selectionGraphics) interaction.selectionGraphics.visible = false
+
       const currentObj = objectMapRef.current.get(obj.id)
-      if (currentObj?.type === "sticky" || currentObj?.type === "text") onTextOpen(obj.id)
+
+      if (currentObj?.type === "sticky") {
+        // sticky keeps full-shape editor
+        onTextOpen(obj.id)
+      } else {
+        // everything else — create a new text object at click position
+        const worldPos = viewport.toWorld(e.global)
+        onTextCreate(worldPos.x - 100, worldPos.y - 20)
+      }
       return
     }
     lastUpTime = now
@@ -128,7 +139,7 @@ function createPointerHandlers(
     if (!currentObj) return
 
     if (toolRef.current === "text") {
-      if (currentObj?.type === "sticky" || currentObj?.type === "text") onTextOpen(obj.id)
+      if (currentObj.type === "sticky" || currentObj.type === "text") onTextOpen(obj.id)
       return
     }
 

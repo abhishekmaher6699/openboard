@@ -34,7 +34,7 @@ export default function BoardCanvas({
   clearSelectionRef,
   previewMode,
   color,
-  strokeWidth
+  strokeWidth,
 }: BoardCanvasProps) {
   const { app } = useApplication();
 
@@ -88,18 +88,18 @@ export default function BoardCanvas({
 
   drawSelectionRef.current = drawSelection;
 
-if (clearSelectionRef) {
-  clearSelectionRef.current = () => {
-    console.log("🧹 clearSelectionRef called");
-    const interaction = interactionRef.current;
-    interaction.selected = new Set();
-    if (interaction.selectionGraphics)
-      interaction.selectionGraphics.visible = false;
-    drawSelectionRef.current(new Set());
-    console.log("📣 calling onSelectionChange([])");
-    onSelectionChange?.([]);
-  };
-}
+  if (clearSelectionRef) {
+    clearSelectionRef.current = () => {
+      console.log("🧹 clearSelectionRef called");
+      const interaction = interactionRef.current;
+      interaction.selected = new Set();
+      if (interaction.selectionGraphics)
+        interaction.selectionGraphics.visible = false;
+      drawSelectionRef.current(new Set());
+      console.log("📣 calling onSelectionChange([])");
+      onSelectionChange?.([]);
+    };
+  }
 
   // disable all interactions in preview mode — pan/zoom still works via viewport
   useDrag({
@@ -123,6 +123,19 @@ if (clearSelectionRef) {
     drawSelectionRef,
     toolRef,
     onTextOpen: openEditor,
+    onTextCreate: async (x, y) => {
+      // ← add
+      const id = await onCreate("text", x, y);
+      let attempts = 0;
+      const waitForObj = () => {
+        if (objectMapRef.current.has(id!)) {
+          openEditor(id!);
+          return;
+        }
+        if (attempts++ < 20) setTimeout(waitForObj, 50);
+      };
+      waitForObj();
+    },
     disabled: previewMode,
   });
 
