@@ -1,4 +1,4 @@
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation, Navigate } from "react-router-dom";
 import { useState } from "react";
 
 import { register, getMe } from "../../../api/auth";
@@ -14,7 +14,13 @@ import { toast } from "sonner";
 import ThemeToggle from "../../ui/ThemeToggle";
 
 const RegisterPage = () => {
+
+
+  const { user, loading: authLoading, setUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from?.pathname ?? "/dashboard";
+
 
   const [form, setForm] = useState<RegisterInput>({
     username: "",
@@ -25,7 +31,9 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { setUser } = useAuth();
+  // guard after all hooks
+  if (authLoading) return null;
+  if (user) return <Navigate to="/dashboard" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

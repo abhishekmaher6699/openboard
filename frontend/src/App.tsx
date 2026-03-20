@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import LoginPage from "./components/auth/login/loginPage";
 import RegisterPage from "./components/auth/register/registerPage";
@@ -8,12 +8,21 @@ import BoardGrid from "./components/dashboard/boards/BoardGrid";
 import ProfilePage from "./components/dashboard/profile/profilePage";
 import SettingsPage from "./components/dashboard/settings/settingsPage";
 import BoardPage from "./components/drawBoard/canvas/BoardPage";
+import { useAuth } from "./context/auth-context";
+
+function RootRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+}
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+
+      <Route path="/" element={<RootRedirect />} />
 
       <Route
         path="/"
@@ -28,7 +37,14 @@ function App() {
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 
-      <Route path="/board/:boardId" element={<BoardPage />} />
+      <Route
+        path="/board/:boardId"
+        element={
+          <ProtectedRoute>
+            <BoardPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
