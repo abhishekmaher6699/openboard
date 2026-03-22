@@ -10,34 +10,25 @@ import {
   AlertDialogAction,
 } from "./alert-dialog"
 
-import { DropdownMenuItem } from "./dropdown-menu"
-
 type Props = {
   title: string
   description: string
   actionLabel: string
-  triggerLabel: string
+  trigger: React.ReactNode
   onConfirm: () => void
-  destructive?: boolean
 }
 
-export default function ConfirmDialog({
+export default function ConfirmDialogButton({
   title,
   description,
   actionLabel,
-  triggerLabel,
+  trigger,
   onConfirm,
-  destructive = false
 }: Props) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <DropdownMenuItem
-          className={destructive ? "text-red-500" : ""}
-          onSelect={(e) => e.preventDefault()}
-        >
-          {triggerLabel}
-        </DropdownMenuItem>
+        {trigger}
       </AlertDialogTrigger>
 
       <AlertDialogContent>

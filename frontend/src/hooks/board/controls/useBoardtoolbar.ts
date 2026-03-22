@@ -17,7 +17,7 @@ export function useBoardToolbar({
   deleteManyObjects,
   clearSelectionRef,
   hideToolbar,
-  updateStrokeWidth
+  updateStrokeWidth,
 }: UseBoardToolbarProps) {
   const getSorted = () =>
     [...objectsRef.current].sort((a, b) => (a.z_index ?? 0) - (b.z_index ?? 0));
@@ -153,9 +153,10 @@ export function useBoardToolbar({
   };
 
   const handleStrokeWidthPreview = (strokeWidth: number) => {
-    const pathIds = selectedIds.filter(
-      (id) => objectsRef.current.find((o) => o.id === id)?.type === "path",
-    );
+    const pathIds = selectedIds.filter((id) => {
+      const type = objectsRef.current.find((o) => o.id === id)?.type;
+      return type === "path" || type === "line"; // ← add "line"
+    });
     if (pathIds.length === 0) return;
     setObjects((prev) =>
       prev.map((obj) =>
@@ -166,13 +167,14 @@ export function useBoardToolbar({
     );
   };
 
-const handleStrokeWidth = (strokeWidth: number, prevStrokeWidth: number) => {
-  const pathIds = selectedIds.filter(
-    (id) => objectsRef.current.find((o) => o.id === id)?.type === "path",
-  );
-  if (pathIds.length === 0) return;
-  updateStrokeWidth(pathIds, strokeWidth, prevStrokeWidth);
-};
+  const handleStrokeWidth = (strokeWidth: number, prevStrokeWidth: number) => {
+    const pathIds = selectedIds.filter((id) => {
+      const type = objectsRef.current.find((o) => o.id === id)?.type;
+      return type === "path" || type === "line";
+    });
+    if (pathIds.length === 0) return;
+    updateStrokeWidth(pathIds, strokeWidth, prevStrokeWidth);
+  };
 
   const STYLE_DEFAULTS: Record<string, any> = {
     bold: false,

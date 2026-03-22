@@ -1,6 +1,10 @@
 import { Container, Graphics } from "pixi.js";
 import { useEffect } from "react";
-import type { DrawSelectionFn, SelectionOverrides, UseSelectionProps } from "../../../types/canvas";
+import type {
+  DrawSelectionFn,
+  SelectionOverrides,
+  UseSelectionProps,
+} from "../../../types/canvas";
 
 type SelectionRect = {
   id: string;
@@ -9,22 +13,30 @@ type SelectionRect = {
   y: number;
   width: number;
   height: number;
-}
+};
 
-function getBoundingBox(rects: { x: number; y: number; width: number; height: number }[], padding = 0) {
+function getBoundingBox(
+  rects: { x: number; y: number; width: number; height: number }[],
+  padding = 0,
+) {
   return {
-    minX: Math.min(...rects.map(r => r.x)) - padding,
-    minY: Math.min(...rects.map(r => r.y)) - padding,
-    maxX: Math.max(...rects.map(r => r.x + r.width)) + padding,
-    maxY: Math.max(...rects.map(r => r.y + r.height)) + padding,
-  }
+    minX: Math.min(...rects.map((r) => r.x)) - padding,
+    minY: Math.min(...rects.map((r) => r.y)) - padding,
+    maxX: Math.max(...rects.map((r) => r.x + r.width)) + padding,
+    maxY: Math.max(...rects.map((r) => r.y + r.height)) + padding,
+  };
 }
 
 function isInsideBox(
   pos: { x: number; y: number },
-  box: { minX: number; minY: number; maxX: number; maxY: number }
+  box: { minX: number; minY: number; maxX: number; maxY: number },
 ) {
-  return pos.x >= box.minX && pos.x <= box.maxX && pos.y >= box.minY && pos.y <= box.maxY
+  return (
+    pos.x >= box.minX &&
+    pos.x <= box.maxX &&
+    pos.y >= box.minY &&
+    pos.y <= box.maxY
+  );
 }
 
 export function useSelection({
@@ -37,8 +49,10 @@ export function useSelection({
   onToolbarUpdate,
   disabled,
 }: UseSelectionProps) {
-
-  const drawSelection: DrawSelectionFn = (ids: Set<string>, overrides?: SelectionOverrides) => {
+  const drawSelection: DrawSelectionFn = (
+    ids: Set<string>,
+    overrides?: SelectionOverrides,
+  ) => {
     const overlay = overlayLayerRef.current;
     if (!overlay) return;
 
@@ -46,7 +60,8 @@ export function useSelection({
     onSelectionChange?.([...ids]);
 
     if (ids.size === 0) {
-      if (interaction.selectionGraphics) interaction.selectionGraphics.visible = false;
+      if (interaction.selectionGraphics)
+        interaction.selectionGraphics.visible = false;
       onToolbarUpdate?.(new Set(), undefined);
       return;
     }
@@ -55,15 +70,43 @@ export function useSelection({
     ids.forEach((id) => {
       const obj = objectMapRef.current.get(id);
       if (!obj) return;
-      const pos = overrides?.get(id) ?? {
-        x: obj.x, y: obj.y,
-        width: obj.width ?? 200,
-        height: obj.height ?? 120,
-      };
+
+      let pos: { x: number; y: number; width: number; height: number };
+
+      if (obj.type === "line") {
+        const override = overrides?.get(id);
+        if (override) {
+          pos = override; // ← use override if provided (during drag)
+        } else {
+          const x1 = obj.x + (obj.data?.x1 ?? 0);
+          const y1 = obj.y + (obj.data?.y1 ?? 0);
+          const x2 = obj.x + (obj.data?.x2 ?? obj.width ?? 200);
+          const y2 = obj.y + (obj.data?.y2 ?? 0);
+          pos = {
+            x: Math.min(x1, x2),
+            y: Math.min(y1, y2),
+            width: Math.abs(x2 - x1),
+            height: Math.abs(y2 - y1),
+          };
+        }
+      } else {
+        pos = overrides?.get(id) ?? {
+          x: obj.x,
+          y: obj.y,
+          width: obj.width ?? 200,
+          height: obj.height ?? 120,
+        };
+      }
+
       rects.push({ id, type: obj.type, ...pos });
     });
-
     if (rects.length === 0) return;
+
+    const allLines = rects.every((r) => r.type === "line");
+    if (allLines) {
+      onToolbarUpdate?.(ids, overrides);
+      return;
+    }
 
     const padding = 4;
     const { minX, minY, maxX, maxY } = getBoundingBox(rects, 0);
@@ -97,7 +140,8 @@ export function useSelection({
       attachHandles(container, {
         id: rects[0].id,
         type: rects[0].type,
-        x: 0, y: 0,
+        x: 0,
+        y: 0,
         width: maxX - minX,
         height: maxY - minY,
       });
@@ -123,12 +167,39 @@ export function useSelection({
       if (interaction.selectionGraphics && interaction.selected.size > 0) {
         const pos = viewport.toWorld(e.global);
         const rects = [...interaction.selected]
-          .map(id => {
+          .map((id) => {
             const obj = objectMapRef.current.get(id);
             if (!obj) return null;
-            return { id, x: obj.x, y: obj.y, width: obj.width ?? 200, height: obj.height ?? 120 };
+
+            if (obj.type === "line") {
+              const x1 = obj.x + (obj.data?.x1 ?? 0);
+              const y1 = obj.y + (obj.data?.y1 ?? 0);
+              const x2 = obj.x + (obj.data?.x2 ?? obj.width ?? 200);
+              const y2 = obj.y + (obj.data?.y2 ?? 0);
+              return {
+                id,
+                x: Math.min(x1, x2),
+                y: Math.min(y1, y2),
+                width: Math.abs(x2 - x1),
+                height: Math.abs(y2 - y1),
+              };
+            }
+
+            return {
+              id,
+              x: obj.x,
+              y: obj.y,
+              width: obj.width ?? 200,
+              height: obj.height ?? 120,
+            };
           })
-          .filter(Boolean) as { id: string; x: number; y: number; width: number; height: number }[];
+          .filter(Boolean) as {
+          id: string;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        }[];
 
         if (rects.length > 0) {
           const box = getBoundingBox(rects, 4);
@@ -153,10 +224,13 @@ export function useSelection({
       interaction.selected = new Set();
       onSelectionChange?.([]);
       onToolbarUpdate?.(new Set(), undefined);
-      if (interaction.selectionGraphics) interaction.selectionGraphics.visible = false;
+      if (interaction.selectionGraphics)
+        interaction.selectionGraphics.visible = false;
     };
 
-    const up = () => { interaction.isGroupDrag = false; };
+    const up = () => {
+      interaction.isGroupDrag = false;
+    };
 
     viewport.on("pointerdown", down);
     viewport.on("pointerup", up);

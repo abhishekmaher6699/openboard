@@ -22,11 +22,7 @@ function getCursor(handle: ResizeHandle) {
   return CURSOR_MAP[handle];
 }
 
-function applyAspectConstraint(
-  type: string,
-  w: number,
-  h: number,
-): { w: number; h: number } {
+function applyAspectConstraint(type: string, w: number, h: number): { w: number; h: number } {
   if (type === "sticky") return { w, h: w };
   return { w, h };
 }
@@ -62,23 +58,48 @@ function computeScale(r: ActiveResize, worldPos: { x: number; y: number }) {
   };
 }
 
-function computeResizes(
-  r: ActiveResize,
-  worldPos: { x: number; y: number },
-) {
+function computeResizes(r: ActiveResize, worldPos: { x: number; y: number }) {
   const { newGX, newGY, scaleX, scaleY } = computeScale(r, worldPos);
   const overrides: SelectionOverrides = new Map();
-  const resizes: {
-    id: string;
-    width: number;
-    height: number;
-    x: number;
-    y: number;
-  }[] = [];
+  const resizes: { id: string; width: number; height: number; x: number; y: number }[] = [];
 
   r.objectSnapshots.forEach(({ obj, graphics }, id) => {
     const newX = newGX + (obj.x - r.groupX) * scaleX;
     const newY = newGY + (obj.y - r.groupY) * scaleY;
+
+    if (obj.type === "line") {
+      const x1 = (obj.data?.x1 ?? 0) * scaleX;
+      const y1 = (obj.data?.y1 ?? 0) * scaleY;
+      const x2 = (obj.data?.x2 ?? obj.width ?? 200) * scaleX;
+      const y2 = (obj.data?.y2 ?? 0) * scaleY;
+
+      const updatedObj = {
+        ...obj,
+        x: newX,
+        y: newY,
+        width: Math.abs(x2 - x1),
+        height: Math.abs(y2 - y1),
+        data: { ...obj.data, x1, y1, x2, y2 },
+      };
+
+      if (graphics) {
+        graphics.x = newX;
+        graphics.y = newY;
+        graphics.scale.set(1, 1);
+        drawShapeFromObj(graphics, updatedObj);
+      }
+
+      overrides.set(id, {
+        x: newX + Math.min(x1, x2),
+        y: newY + Math.min(y1, y2),
+        width: Math.abs(x2 - x1),
+        height: Math.abs(y2 - y1),
+      });
+
+      resizes.push({ id, width: Math.abs(x2 - x1), height: Math.abs(y2 - y1), x: newX, y: newY });
+      return;
+    }
+
     const { w: newW, h: newH } = applyAspectConstraint(
       obj.type,
       Math.max(MIN_SIZE, obj.width * scaleX),
@@ -111,8 +132,10 @@ export function useResize({
 
   function attachHandles(
     container: any,
-    groupRect: { x: number; y: number; width: number; height: number },
+    groupRect: { x: number; y: number; width: number; height: number; type: string },
   ) {
+    if (groupRect.type === "line") return;
+
     const padding = 4;
     const handles: ResizeHandle[] = ["nw", "ne", "se", "sw"];
 
@@ -143,15 +166,23 @@ export function useResize({
           objectSnapshots.set(id, { obj: { ...obj }, graphics: g });
         });
 
-        let minX = Infinity,
-          minY = Infinity,
-          maxX = -Infinity,
-          maxY = -Infinity;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         objectSnapshots.forEach(({ obj }) => {
-          minX = Math.min(minX, obj.x);
-          minY = Math.min(minY, obj.y);
-          maxX = Math.max(maxX, obj.x + obj.width);
-          maxY = Math.max(maxY, obj.y + obj.height);
+          if (obj.type === "line") {
+            const x1 = obj.x + (obj.data?.x1 ?? 0);
+            const y1 = obj.y + (obj.data?.y1 ?? 0);
+            const x2 = obj.x + (obj.data?.x2 ?? obj.width ?? 200);
+            const y2 = obj.y + (obj.data?.y2 ?? 0);
+            minX = Math.min(minX, Math.min(x1, x2));
+            minY = Math.min(minY, Math.min(y1, y2));
+            maxX = Math.max(maxX, Math.max(x1, x2));
+            maxY = Math.max(maxY, Math.max(y1, y2));
+          } else {
+            minX = Math.min(minX, obj.x);
+            minY = Math.min(minY, obj.y);
+            maxX = Math.max(maxX, obj.x + obj.width);
+            maxY = Math.max(maxY, obj.y + obj.height);
+          }
         });
 
         activeResizeRef.current = {
@@ -199,7 +230,22 @@ export function useResize({
         const { obj, graphics } = r.objectSnapshots.get(id)!;
         if (graphics) {
           graphics.scale.set(1, 1);
-          drawShapeFromObj(graphics, { ...obj, x, y, width, height });
+          if (obj.type === "line") {
+            const scaleX = width / (obj.width || 1);
+            const scaleY = height / (obj.height || 1);
+            drawShapeFromObj(graphics, {
+              ...obj, x, y, width, height,
+              data: {
+                ...obj.data,
+                x1: (obj.data?.x1 ?? 0) * scaleX,
+                y1: (obj.data?.y1 ?? 0) * scaleY,
+                x2: (obj.data?.x2 ?? obj.width) * scaleX,
+                y2: (obj.data?.y2 ?? 0) * scaleY,
+              }
+            });
+          } else {
+            drawShapeFromObj(graphics, { ...obj, x, y, width, height });
+          }
         }
       });
 

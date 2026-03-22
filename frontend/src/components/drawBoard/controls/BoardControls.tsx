@@ -12,6 +12,7 @@ import {
   Redo2,
   Clock,
   Palette,
+  Minus,
 } from "lucide-react";
 import type { Tool, BoardControlsProps } from "../../../types/board";
 
@@ -33,6 +34,7 @@ const tools: { id: Tool; label: React.ReactNode }[] = [
   { id: "sticky", label: <StickyNote size={16} /> },
   { id: "text", label: <Type size={16} /> },
   { id: "pen", label: <Pencil size={16} /> },
+  { id: "line", label: <Minus size ={16}/> }
 ];
 
 type MobilePanel = "tools" | "colors" | null;

@@ -1,16 +1,21 @@
-import { memo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { apiRequest } from "../../../api/client";
 import PixiBoard from "./PixiBoard";
 
-const BoardPage = memo(function BoardPage() {
-  const { boardId } = useParams();
+export default function BoardPage() {
+  const { boardId } = useParams<{ boardId: string }>();
+  const navigate = useNavigate();
+  const [boardOwnerId, setBoardOwnerId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!boardId) return;
+    apiRequest<{ owner: { id: number } }>(`/boards/${boardId}/`)
+      .then((data) => setBoardOwnerId(data.owner.id))
+      .catch(() => navigate("/dashboard"));
+  }, [boardId]);
+
   if (!boardId) return null;
 
-  return (
-    <div className="w-screen h-screen overflow-hidden">
-      <PixiBoard boardId={boardId} />
-    </div>
-  );
-});
-
-export default BoardPage;
+  return <PixiBoard boardId={boardId} boardOwnerId={boardOwnerId} />;
+}

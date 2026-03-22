@@ -25,12 +25,14 @@ export type BoardCanvasProps = {
   onTextChange: (id: string, text: string) => void
   onResizeMany: (resizes: { id: string; width: number; height: number; x: number; y: number }[]) => void
   onToolbarUpdate?: (ids: Set<string>, overrides?: SelectionOverrides) => void
+  onLineUpdate: (id: string, x1: number, y1: number, x2: number, y2: number) => void
   viewportRef?: React.RefObject<any>
   objectMapRef?: React.RefObject<Map<string, BoardObject>>
   clearSelectionRef?: React.RefObject<() => void>
   previewMode?: boolean
   color: string
   strokeWidth: number
+  selectedIds: string[]
 }
 
 export type BoardInteraction = {

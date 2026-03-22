@@ -14,6 +14,7 @@ import { useBoardInteraction } from "../../../hooks/board/canvas/useInteractionS
 import type { BoardCanvasProps, DrawSelectionFn } from "../../../types/canvas";
 import type { BoardObject, Tool } from "../../../types/board";
 import { usePen } from "../../../hooks/board/interactions/usePen";
+import { useLineHandles } from "../../../hooks/board/interactions/useLineHandles";
 
 export default function BoardCanvas({
   objects,
@@ -29,12 +30,14 @@ export default function BoardCanvas({
   onTextChange,
   onResizeMany,
   onToolbarUpdate,
+  onLineUpdate,
   viewportRef: externalViewportRef,
   objectMapRef: externalObjectMapRef,
   clearSelectionRef,
   previewMode,
   color,
   strokeWidth,
+  selectedIds
 }: BoardCanvasProps) {
   const { app } = useApplication();
 
@@ -111,6 +114,17 @@ export default function BoardCanvas({
     onManyMove,
     drawSelectionRef,
     disabled: previewMode,
+  });
+
+  const { drawHandles: drawLineHandles } = useLineHandles({
+    viewportRef,
+    overlayLayerRef,
+    interactionRef,
+    objectMapRef,
+    selectedIds,
+    onUpdateLine: onLineUpdate, 
+    disabled: previewMode,
+    objects
   });
 
   useShapeRenderer({

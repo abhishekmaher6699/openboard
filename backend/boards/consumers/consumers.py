@@ -15,9 +15,8 @@ from .db_operations import (
 logger = logging.getLogger("board.consumer")
 
 _undo_stacks: dict = {}
-
-# Track active users per board: { board_id: { channel_name: { user_id, username } } }
 _active_users: dict = {}
+_kicked_users: dict = {}  # { board_id: set of user_ids }
 
 TRACKED = {
     "create_shape", "delete_shape", "delete_many",
@@ -55,7 +54,6 @@ class BoardConsumer(AsyncWebsocketConsumer):
             if not stacks["undo"]:
                 stacks["undo"] = await load_user_undo_stack(self.board_id, self.user.id)
 
-            # Register FIRST
             if self.board_id not in _active_users:
                 _active_users[self.board_id] = {}
             _active_users[self.board_id][self.channel_name] = {
@@ -63,13 +61,11 @@ class BoardConsumer(AsyncWebsocketConsumer):
                 "username": self.user.username,
             }
 
-            # Send ALL users including self — frontend deduplicates
             await self.send(text_data=json.dumps({
                 "type": "presence_init",
                 "users": get_active_users(self.board_id),
             }))
 
-            # Broadcast join to others only
             await self.channel_layer.group_send(
                 self.group_name,
                 {
@@ -82,15 +78,17 @@ class BoardConsumer(AsyncWebsocketConsumer):
                 }
             )
 
-
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
         if self.user and self.user.is_authenticated:
-            if self.board_id in _active_users:
-                _active_users[self.board_id].pop(self.channel_name, None)
+            _active_users.get(self.board_id, {}).pop(self.channel_name, None)
 
-            # Broadcast leave to everyone
+            board_kicked = _kicked_users.get(self.board_id, set())
+            if self.user.id in board_kicked:
+                board_kicked.discard(self.user.id)
+                return
+
             await self.channel_layer.group_send(
                 self.group_name,
                 {
@@ -98,6 +96,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
                     "message": {
                         "type": "user_left",
                         "user_id": self.user.id,
+                        "username": self.user.username,
                     },
                 }
             )
@@ -110,7 +109,6 @@ class BoardConsumer(AsyncWebsocketConsumer):
         user = self.scope.get("user")
         msg_type = data["type"]
 
-        # Handle cursor moves — broadcast to others only, no DB
         if msg_type == "cursor_move":
             await self.channel_layer.group_send(
                 self.group_name,
@@ -126,7 +124,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
                 }
             )
             return
-        
+
         if msg_type == "selection_update":
             await self.channel_layer.group_send(
                 self.group_name,
@@ -162,7 +160,10 @@ class BoardConsumer(AsyncWebsocketConsumer):
             await self._handle_chat_reaction(data, user)
             return
 
-        # broadcast all other messages to everyone
+        if msg_type == "kick_user":
+            await self._handle_kick(data, user)
+            return
+
         await self.channel_layer.group_send(
             self.group_name,
             {"type": "board_event", "message": data}
@@ -306,7 +307,6 @@ class BoardConsumer(AsyncWebsocketConsumer):
         if not user or not user.is_authenticated:
             return
         import uuid
-        from django.utils import timezone
 
         text = data.get("text", "").strip()
         if not text:
@@ -332,6 +332,48 @@ class BoardConsumer(AsyncWebsocketConsumer):
             "emoji": data.get("emoji"),
             "user_id": user.id,
         })
+
+    async def _handle_kick(self, data, user):
+        if not user or not user.is_authenticated:
+            return
+
+        target_id = data.get("user_id")
+        if not target_id:
+            return
+
+        from channels.db import database_sync_to_async
+
+        @database_sync_to_async
+        def do_kick():
+            from boards.models import Board
+            from django.contrib.auth.models import User as DjangoUser
+            try:
+                board = Board.objects.get(public_id=self.board_id)
+                if board.owner != user:
+                    return None
+                target = DjangoUser.objects.get(id=target_id)
+                if target not in board.members.all():
+                    return None
+                board.members.remove(target)
+                return {"user_id": target.id, "username": target.username}
+            except Exception:
+                return None
+
+        result = await do_kick()
+        if not result:
+            return
+
+        # Mark as kicked BEFORE broadcasting so disconnect skips user_left
+        if self.board_id not in _kicked_users:
+            _kicked_users[self.board_id] = set()
+        _kicked_users[self.board_id].add(result["user_id"])
+
+        await self._send_to_sender_and_others({
+            "type": "user_kicked",
+            "user_id": result["user_id"],
+            "username": result["username"],
+        })
+
     # ── utils ─────────────────────────────────────────────────────────
 
     async def _send_to_sender_and_others(self, msg):

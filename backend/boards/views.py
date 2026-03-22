@@ -92,3 +92,28 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         board.members.remove(request.user)
         return Response({"detail": "Left board"})
+    
+    @action(detail=True, methods=["post"], url_path="kick/(?P<user_id>[^/.]+)")
+    def kick(self, request, public_id=None, user_id=None):
+        board = self.get_object()
+
+        if request.user != board.owner:
+            return Response(
+                {"detail": "Only the owner can kick members"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        from django.contrib.auth.models import User
+        try:
+            user_to_kick = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if user_to_kick == board.owner:
+            return Response({"detail": "Cannot kick the owner"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user_to_kick not in board.members.all():
+            return Response({"detail": "User is not a member"}, status=status.HTTP_400_BAD_REQUEST)
+
+        board.members.remove(user_to_kick)
+        return Response({"detail": "User kicked"})

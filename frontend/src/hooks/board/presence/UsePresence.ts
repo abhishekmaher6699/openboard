@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export interface PresenceUser {
   user_id: number;
@@ -34,7 +36,7 @@ interface UsePresenceProps {
   socketRef: React.RefObject<WebSocket | null>;
   currentUserId: number | null;
   onMessage: (handler: (data: any) => boolean) => () => void;
-  viewportRef: React.RefObject<any>; // ✅ NEW
+  viewportRef: React.RefObject<any>;
 }
 
 export function usePresence({
@@ -44,36 +46,83 @@ export function usePresence({
   viewportRef,
 }: UsePresenceProps) {
   const [users, setUsers] = useState<PresenceUser[]>([]);
+  const navigate = useNavigate();
+  const recentlyLeft = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+  const kickUser = useCallback(
+    (userId: number) => {
+      const ws = socketRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ type: "kick_user", user_id: userId }));
+    },
+    [socketRef],
+  );
 
   useEffect(() => {
     const unregister = onMessage((data) => {
-        if (data.type === "presence_init") {
-            console.log("presence_init users:", data.users);
-            const seen = new Set();
-            const unique = data.users.filter((u: PresenceUser) => {
-                if (seen.has(u.user_id)) return false;
-                seen.add(u.user_id);
-                return true;
-            });
-            setUsers(unique.map((u: PresenceUser) => ({ ...u, cursor: null })));
-            return true;
-            }
+      if (data.type === "presence_init") {
+        const seen = new Set();
+        const unique = data.users.filter((u: PresenceUser) => {
+          if (seen.has(u.user_id)) return false;
+          seen.add(u.user_id);
+          return true;
+        });
+        setUsers(unique.map((u: PresenceUser) => ({ ...u, cursor: null })));
+        return true;
+      }
 
       if (data.type === "user_joined") {
-        console.log("user_joined:", data.user);
         setUsers((prev) => {
-          console.log(
-            "current users before join:",
-            prev.map((u) => u.user_id),
-          );
           if (prev.some((u) => u.user_id === data.user.user_id)) return prev;
           return [...prev, { ...data.user, cursor: null }];
         });
+
+        if (data.user.user_id !== currentUserId) {
+          if (recentlyLeft.current.has(data.user.user_id)) {
+            // They refreshed — cancel the pending "left" toast, show nothing
+            clearTimeout(recentlyLeft.current.get(data.user.user_id));
+            recentlyLeft.current.delete(data.user.user_id);
+          } else {
+            toast(`${data.user.username} joined the board`, {
+              icon: "👋",
+              duration: 3000,
+            });
+          }
+        }
         return true;
       }
 
       if (data.type === "user_left") {
         setUsers((prev) => prev.filter((u) => u.user_id !== data.user_id));
+
+        if (data.user_id !== currentUserId && data.username) {
+          // Hold the toast for 2s in case they immediately rejoin (refresh)
+          const timer = setTimeout(() => {
+            toast(`${data.username} left the board`, {
+              icon: "🚪",
+              duration: 3000,
+            });
+            recentlyLeft.current.delete(data.user_id);
+          }, 2000);
+
+          recentlyLeft.current.set(data.user_id, timer);
+        }
+        return true;
+      }
+
+      if (data.type === "user_kicked") {
+        setUsers((prev) => prev.filter((u) => u.user_id !== data.user_id));
+        if (data.user_id === currentUserId) {
+          toast.error("You have been removed from this board", {
+            duration: 5000,
+          });
+          navigate("/dashboard");
+        } else {
+          toast(`${data.username} was removed from the board`, {
+            icon: "🚫",
+            duration: 3000,
+          });
+        }
         return true;
       }
 
@@ -81,7 +130,7 @@ export function usePresence({
         setUsers((prev) =>
           prev.map((u) =>
             u.user_id === data.user_id
-              ? { ...u, cursor: { x: data.x, y: data.y } } // WORLD coords
+              ? { ...u, cursor: { x: data.x, y: data.y } }
               : u,
           ),
         );
@@ -89,11 +138,6 @@ export function usePresence({
       }
 
       if (data.type === "selection_update") {
-        console.log(
-          "👥 remote selection_update received:",
-          data.user_id,
-          data.selected_ids,
-        );
         setUsers((prev) =>
           prev.map((u) =>
             u.user_id === data.user_id
@@ -108,14 +152,21 @@ export function usePresence({
     });
 
     return unregister;
-  }, [onMessage]);
+  }, [onMessage, currentUserId, navigate]);
+
+  // Clean up any pending timers on unmount
+  useEffect(() => {
+    return () => {
+      recentlyLeft.current.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
 
   useEffect(() => {
     let lastSent = 0;
 
     const handleMouseMove = (e: MouseEvent) => {
       const now = Date.now();
-      if (now - lastSent < 150) return; // max 20 updates/sec
+      if (now - lastSent < 150) return;
       lastSent = now;
 
       const ws = socketRef.current;
@@ -123,20 +174,16 @@ export function usePresence({
       if (!ws || ws.readyState !== WebSocket.OPEN || !viewport) return;
 
       const worldPos = viewport.toWorld(e.clientX, e.clientY);
-
       ws.send(
-        JSON.stringify({
-          type: "cursor_move",
-          x: worldPos.x,
-          y: worldPos.y,
-        }),
+        JSON.stringify({ type: "cursor_move", x: worldPos.x, y: worldPos.y }),
       );
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [socketRef, viewportRef]);
+
   const otherUsers = users.filter((u) => u.user_id !== currentUserId);
 
-  return { users, otherUsers };
+  return { users, otherUsers, kickUser };
 }

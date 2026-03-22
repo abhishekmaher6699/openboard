@@ -26,11 +26,13 @@ import { MessageCircle } from "lucide-react";
 import { useTheme } from "../../../context/theme-context";
 import ThemeToggle from "../../ui/ThemeToggle";
 
-export default memo(function PixiBoard({ boardId }: { boardId: string }) {
+export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: string, boardOwnerId: number | null }) {
   //  console.log("PixiBoard render", boardId);
   const { theme } = useTheme();
   // console.log("useTheme value:", theme);
   const isDark = theme === "dark";
+
+
 
   const [objects, setObjects] = useState<BoardObject[]>([]);
   const [tool, setTool] = useState<Tool>("select");
@@ -57,6 +59,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const isOwner = boardOwnerId !== null && currentUserId === boardOwnerId;
 
 
   const viewportRef = useRef<any>(null);
@@ -139,7 +142,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
     onReaction,
   });
 
-  const { users, otherUsers } = usePresence({
+  const { users, otherUsers, kickUser } = usePresence({
     socketRef: socket.socketRef,
     currentUserId,
     onMessage: socket.registerMessageHandler,
@@ -158,7 +161,8 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
     resizeManyObjects,
     updateColor,
     updateText,
-    updateStrokeWidth
+    updateStrokeWidth,
+    updateLine
   } = useBoardObjects({ boardId, color, objects, setObjects, ...socket });
 
   const {
@@ -246,7 +250,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
       )}
 
       {/* Active users top-left */}
-      <ActiveUsers users={users} currentUserId={currentUserId} />
+      <ActiveUsers users={users} currentUserId={currentUserId} isOwner={isOwner} onKick={kickUser}/>
       <RemoteSelections
         users={otherUsers}
         objects={objects}
@@ -355,6 +359,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
           onResizeMany={resizeManyObjects}
           onSelectionChange={setSelectedIds}
           onTextChange={updateText}
+          onLineUpdate={updateLine}
           onToolbarUpdate={isPreviewMode ? undefined : updateToolbar}
           viewportRef={viewportRef}
           objectMapRef={objectMapRef}
@@ -362,6 +367,7 @@ export default memo(function PixiBoard({ boardId }: { boardId: string }) {
           previewMode={isPreviewMode}
           color={isPreviewMode ? "#ff0000" : color}
           strokeWidth={strokeWidth}
+          selectedIds={selectedIds}
         />
       </Application>
     </>

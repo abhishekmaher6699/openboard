@@ -31,23 +31,30 @@ export function useBoardObjects({
     y: number,
     extraData?: Record<string, any>,
   ): Promise<string | null> => {
+    console.log("Create new object called");
     const fill = color.replace("#", "0x");
     const maxZ = Math.max(0, ...objectsRef.current.map((o) => o.z_index ?? 0));
     const defaultFill = type === "sticky" ? "0xffd700" : fill;
 
+    const isLine = type === "line";
+
     const newObject = {
       type,
-      x,
-      y,
-      width: extraData?.width ?? (type === "text" ? 200 : 200),
-      height: extraData?.height ?? (type === "text" ? 80 : 120),
+      x: isLine ? x : x,
+      y: isLine ? y : y,
+      width: isLine ? 200 : (extraData?.width ?? (type === "text" ? 200 : 200)),
+      height: isLine ? 4 : (extraData?.height ?? (type === "text" ? 80 : 120)),
       z_index: maxZ + 1000,
-      data: extraData ?? { fill: defaultFill, text: "" },
+      data: isLine
+        ? { x1: 0, y1: 0, x2: 200, y2: 0, strokeWidth: 3, fill: fill }
+        : (extraData ?? { fill: defaultFill, text: "" }),
     };
     try {
       const created = await createObject(boardId, newObject);
       setObjects((prev) => [...prev, created]);
       sendCreate(created, { type: "create", object: created });
+      console.log("created: ", created);
+
       return created.id;
     } catch (err) {
       console.error("Create failed", err);
@@ -188,23 +195,74 @@ export function useBoardObjects({
         };
       }),
     };
+
     setObjects((prev) =>
       prev.map((obj) => {
         const r = resizes.find((r) => r.id === obj.id);
-        return r ? { ...obj, ...r } : obj;
-      }),
-    );
-    try {
-      sendResizeMany(resizes, diff);
-      Promise.all(
-        resizes.map((r) =>
-          updateObject(boardId, r.id, {
+        if (!r) return obj;
+
+        if (obj.type === "line") {
+          const origX1 = obj.data?.x1 ?? 0;
+          const origY1 = obj.data?.y1 ?? 0;
+          const origX2 = obj.data?.x2 ?? 200;
+          const origY2 = obj.data?.y2 ?? 0;
+
+          const origSpanX = origX2 - origX1; // actual span, not obj.width
+          const origSpanY = origY2 - origY1;
+
+          const scaleX = r.width / (Math.abs(origSpanX) || 1);
+          const scaleY = r.height / (Math.abs(origSpanY) || 1);
+
+          // preserve direction (sign) when scaling
+          return {
+            ...obj,
             x: r.x,
             y: r.y,
             width: r.width,
             height: r.height,
-          }),
-        ),
+            data: {
+              ...obj.data,
+              x1: origX1 < origX2 ? 0 : r.width,
+              y1: origY1 < origY2 ? 0 : r.height,
+              x2: origX1 < origX2 ? r.width : 0,
+              y2: origY1 < origY2 ? r.height : 0,
+            },
+          };
+        }
+
+        return { ...obj, ...r };
+      }),
+    );
+
+    try {
+      sendResizeMany(resizes, diff);
+      Promise.all(
+        resizes.map((r) => {
+          const obj = objectsRef.current.find((o) => o.id === r.id);
+          if (obj?.type === "line") {
+            const scaleX = r.width / (obj.width || 1);
+            const scaleY = r.height / (obj.height || 1);
+            return updateObject(boardId, r.id, {
+              x: r.x,
+              y: r.y,
+              width: r.width,
+              height: r.height,
+              data: {
+                ...obj.data,
+                x1: (obj.data?.x1 ?? 0) * scaleX,
+                y1: (obj.data?.y1 ?? 0) * scaleY,
+                x2: (obj.data?.x2 ?? obj.width) * scaleX,
+                y2: (obj.data?.y2 ?? 0) * scaleY,
+              },
+            });
+          }
+          return updateObject(boardId, r.id, {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+          });
+        }),
       );
     } catch (err) {
       console.error("Resize many failed", err);
@@ -280,8 +338,11 @@ export function useBoardObjects({
     strokeWidth: number,
     prevStrokeWidth: number,
   ) => {
-
-    console.log("updateStrokeWidth called", { ids, strokeWidth, prevStrokeWidth });
+    console.log("updateStrokeWidth called", {
+      ids,
+      strokeWidth,
+      prevStrokeWidth,
+    });
 
     const snapshots = ids.map((id) => ({
       id,
@@ -331,6 +392,41 @@ export function useBoardObjects({
       console.error("Stroke width update failed", err);
     }
   };
+
+  const updateLine = async (
+    id: string,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ) => {
+    const obj = objectsRef.current.find((o) => o.id === id);
+    if (!obj) return;
+
+    const diff: BoardDiff = {
+      type: "update",
+      id,
+      from: {
+        data: {
+          x1: obj.data?.x1,
+          y1: obj.data?.y1,
+          x2: obj.data?.x2,
+          y2: obj.data?.y2,
+        },
+      },
+      to: { data: { x1, y1, x2, y2 } },
+    };
+
+    setObjects((prev) =>
+      prev.map((o) =>
+        o.id === id ? { ...o, data: { ...o.data, x1, y1, x2, y2 } } : o,
+      ),
+    );
+
+    sendUpdate(id, { data: { x1, y1, x2, y2 } }, "update_object", diff);
+    await updateObject(boardId, id, { data: { ...obj.data, x1, y1, x2, y2 } });
+  };
+
   return {
     objectsRef,
     createNewObject,
@@ -343,5 +439,6 @@ export function useBoardObjects({
     updateColor,
     updateText,
     updateStrokeWidth,
+    updateLine,
   };
 }

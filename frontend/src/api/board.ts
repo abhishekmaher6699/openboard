@@ -30,3 +30,9 @@ export function leaveBoard(publicId: string) {
     method: "POST"
   })
 }
+
+export function kickMember(publicId: string, userId: number) {
+  return apiRequest(`/boards/${publicId}/kick/${userId}/`, {
+    method: "POST",
+  });
+}

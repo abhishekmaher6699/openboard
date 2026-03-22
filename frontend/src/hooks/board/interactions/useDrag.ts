@@ -16,7 +16,7 @@ export function useDrag({
     const viewport = viewportRef.current;
     if (!viewport) return;
 
-    const interaction = interactionRef.current;  // ← moved inside
+    const interaction = interactionRef.current; // ← moved inside
 
     const move = (e: any) => {
       const drag = interaction.activeDrag;
@@ -28,7 +28,10 @@ export function useDrag({
 
       interaction.selected.forEach((id: string) => {
         const g = interaction.graphicsMap.get(id);
-        if (g) { g.x += dx; g.y += dy; }
+        if (g) {
+          g.x += dx;
+          g.y += dy;
+        }
       });
 
       const overrides: SelectionOverrides = new Map();
@@ -36,7 +39,26 @@ export function useDrag({
         const g = interaction.graphicsMap.get(id);
         const obj = objectMapRef.current.get(id);
         if (!g || !obj) return;
-        overrides.set(id, { x: g.x, y: g.y, width: obj.width ?? 200, height: obj.height ?? 120 });
+
+        if (obj.type === "line") {
+          const x1 = g.x + (obj.data?.x1 ?? 0);
+          const y1 = g.y + (obj.data?.y1 ?? 0);
+          const x2 = g.x + (obj.data?.x2 ?? obj.width ?? 200);
+          const y2 = g.y + (obj.data?.y2 ?? 0);
+          overrides.set(id, {
+            x: Math.min(x1, x2),
+            y: Math.min(y1, y2),
+            width: Math.abs(x2 - x1),
+            height: Math.abs(y2 - y1),
+          });
+        } else {
+          overrides.set(id, {
+            x: g.x,
+            y: g.y,
+            width: obj.width ?? 200,
+            height: obj.height ?? 120,
+          });
+        }
       });
 
       drawSelectionRef.current(interaction.selected, overrides);
@@ -50,7 +72,11 @@ export function useDrag({
         const id = [...interaction.selected][0];
         const g = interaction.graphicsMap.get(id);
         const obj = objectMapRef.current.get(id);
-        if (g && obj && (Math.abs(g.x - obj.x) > 1 || Math.abs(g.y - obj.y) > 1)) {
+        if (
+          g &&
+          obj &&
+          (Math.abs(g.x - obj.x) > 1 || Math.abs(g.y - obj.y) > 1)
+        ) {
           onMove(id, g.x, g.y);
         }
       } else {
@@ -58,7 +84,11 @@ export function useDrag({
         interaction.selected.forEach((id: string) => {
           const g = interaction.graphicsMap.get(id);
           const obj = objectMapRef.current.get(id);
-          if (g && obj && (Math.abs(g.x - obj.x) > 1 || Math.abs(g.y - obj.y) > 1)) {
+          if (
+            g &&
+            obj &&
+            (Math.abs(g.x - obj.x) > 1 || Math.abs(g.y - obj.y) > 1)
+          ) {
             moves.push({ id, x: g.x, y: g.y });
           }
         });

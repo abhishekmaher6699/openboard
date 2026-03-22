@@ -7,6 +7,7 @@ export type Tool =
   | "diamond"
   | "text"
   | "pen"
+  | "line"
 
 export type BoardObject = {
   id: string

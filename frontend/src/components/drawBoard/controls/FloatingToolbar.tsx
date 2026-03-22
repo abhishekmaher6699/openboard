@@ -85,11 +85,11 @@ export default function FloatingToolbar({
   // detect if any selected object is a path
   const hasPath = objects
     .filter((o) => toolbar.ids.includes(o.id))
-    .some((o) => o.type === "path");
+    .some((o) => o.type === "path" || o.type === "line");
 
   // get current strokeWidth from first selected path
   const pathStrokeWidth =
-    objects.find((o) => toolbar.ids.includes(o.id) && o.type === "path")?.data
+    objects.find((o) => toolbar.ids.includes(o.id) && o.type === "path" || o.type === "line")?.data
       ?.strokeWidth ?? 3;
 
   const [localStrokeWidth, setLocalStrokeWidth] = useState(pathStrokeWidth);

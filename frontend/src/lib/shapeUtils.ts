@@ -76,7 +76,6 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
     g.lineTo(width - foldSize, foldSize);
     g.closePath();
     g.fill(foldColor);
-
   } else if (obj.type === "text") {
     // no background
   } else if (obj.type === "circle") {
@@ -100,8 +99,16 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
     const strokeColor = Number(obj.data?.fill ?? "0x000000");
     const strokeWidth = obj.data?.strokeWidth ?? 3;
 
-    const origW = obj.data?.origWidth ?? (points.length >= 4 ? Math.max(...points.filter((_, i) => i % 2 === 0)) : width);
-    const origH = obj.data?.origHeight ?? (points.length >= 4 ? Math.max(...points.filter((_, i) => i % 2 !== 0)) : height);
+    const origW =
+      obj.data?.origWidth ??
+      (points.length >= 4
+        ? Math.max(...points.filter((_, i) => i % 2 === 0))
+        : width);
+    const origH =
+      obj.data?.origHeight ??
+      (points.length >= 4
+        ? Math.max(...points.filter((_, i) => i % 2 !== 0))
+        : height);
     const sx = origW > 0 ? width / origW : 1;
     const sy = origH > 0 ? height / origH : 1;
 
@@ -117,6 +124,17 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
         join: "round",
       });
     }
+  } else if (obj.type === "line") {
+    const x1 = obj.data?.x1 ?? 0;
+    const y1 = obj.data?.y1 ?? 0;
+    const x2 = obj.data?.x2 ?? obj.width ?? 200;
+    const y2 = obj.data?.y2 ?? 0;
+    const strokeColor = Number(obj.data?.fill ?? "0x000000");
+    const strokeWidth = obj.data?.strokeWidth ?? 3;
+
+    g.moveTo(x1, y1);
+    g.lineTo(x2, y2);
+    g.stroke({ width: strokeWidth, color: strokeColor, cap: "round" });
   } else {
     g.rect(0, 0, width, height);
     g.fill(fill);
@@ -156,7 +174,6 @@ export function drawShapeFromObj(container: Container, obj: BoardObject) {
     t.x = align === "left" ? 12 : align === "right" ? width - 12 : width / 2;
     t.y = obj.type === "sticky" ? height / 2 + 4 : height / 2;
     t.visible = true;
-
   } else {
     if (t) t.visible = false;
   }

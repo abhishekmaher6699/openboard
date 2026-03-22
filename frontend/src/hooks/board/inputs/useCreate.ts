@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import type { UseCreateProps } from "../../../types/canvas"
 
-const SHAPE_TOOLS = ["rectangle", "circle", "triangle", "diamond", "sticky"]
+const SHAPE_TOOLS = ["rectangle", "circle", "triangle", "diamond", "sticky", "line"]
 
 export function useCreate({
   viewportRef,

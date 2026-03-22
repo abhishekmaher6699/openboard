@@ -7,18 +7,38 @@ interface Props {
   users: PresenceUser[];
   objects: BoardObject[];
   viewportRef: React.RefObject<any>;
-  isPreviewMode: boolean
+  isPreviewMode: boolean;
+}
+
+function getObjectBounds(o: BoardObject) {
+  if (o.type === "line") {
+    const x1 = o.x + (o.data?.x1 ?? 0);
+    const y1 = o.y + (o.data?.y1 ?? 0);
+    const x2 = o.x + (o.data?.x2 ?? o.width ?? 200);
+    const y2 = o.y + (o.data?.y2 ?? 0);
+    return {
+      minX: Math.min(x1, x2),
+      minY: Math.min(y1, y2),
+      maxX: Math.max(x1, x2),
+      maxY: Math.max(y1, y2),
+    };
+  }
+  return {
+    minX: o.x,
+    minY: o.y,
+    maxX: o.x + (o.width ?? 200),
+    maxY: o.y + (o.height ?? 120),
+  };
 }
 
 export default function RemoteSelections({
   users,
   objects,
   viewportRef,
-  isPreviewMode
+  isPreviewMode,
 }: Props) {
+  if (isPreviewMode) return null;
 
-  if (isPreviewMode) return null
-  
   const viewport = viewportRef.current;
   if (!viewport) return null;
 
@@ -35,17 +55,13 @@ export default function RemoteSelections({
 
         if (selectedObjects.length === 0) return null;
 
-        // 🔥 Compute bounding box in WORLD coords
-        const minX = Math.min(...selectedObjects.map((o) => o.x));
-        const minY = Math.min(...selectedObjects.map((o) => o.y));
-        const maxX = Math.max(
-          ...selectedObjects.map((o) => o.x + o.width)
-        );
-        const maxY = Math.max(
-          ...selectedObjects.map((o) => o.y + o.height)
-        );
+        const bounds = selectedObjects.map(getObjectBounds);
 
-        // 🔥 Convert to screen
+        const minX = Math.min(...bounds.map((b) => b.minX));
+        const minY = Math.min(...bounds.map((b) => b.minY));
+        const maxX = Math.max(...bounds.map((b) => b.maxX));
+        const maxY = Math.max(...bounds.map((b) => b.maxY));
+
         const topLeft = viewport.toScreen(minX, minY);
         const bottomRight = viewport.toScreen(maxX, maxY);
 
@@ -57,7 +73,7 @@ export default function RemoteSelections({
         return (
           <div
             key={user.user_id}
-            className="fixed pointer-events-none z-9996"
+            className="fixed pointer-events-none z-[9996]"
             style={{
               left: topLeft.x,
               top: topLeft.y,
@@ -68,7 +84,6 @@ export default function RemoteSelections({
               boxShadow: `0 0 0 1px ${color}33`,
             }}
           >
-            {/* Label */}
             <div
               className="absolute -top-5 left-0 px-1.5 py-0.5 text-[10px] text-white rounded"
               style={{ background: color }}
