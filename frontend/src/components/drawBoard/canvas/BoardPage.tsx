@@ -1,9 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { apiRequest } from "../../../api/client";
 import PixiBoard from "./PixiBoard";
 
-export default function BoardPage() {
+const BoardPage = memo(function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>();
   const navigate = useNavigate();
   const [boardOwnerId, setBoardOwnerId] = useState<number | null>(null);
@@ -17,5 +17,11 @@ export default function BoardPage() {
 
   if (!boardId) return null;
 
-  return <PixiBoard boardId={boardId} boardOwnerId={boardOwnerId} />;
-}
+  return (
+    <div className="fixed inset-0 overflow-hidden">
+      <PixiBoard boardId={boardId} boardOwnerId={boardOwnerId} />
+    </div>
+  );
+});
+
+export default BoardPage;

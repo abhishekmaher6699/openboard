@@ -206,7 +206,7 @@ export default function useBoardSocket({
     }
 
     const socket = new WebSocket(
-      `ws://localhost:8000/ws/board/${boardId}/?token=${token}`
+      `ws://192.168.1.71:8000/ws/board/${boardId}/?token=${token}`
     );
 
     socketRef.current = socket;
