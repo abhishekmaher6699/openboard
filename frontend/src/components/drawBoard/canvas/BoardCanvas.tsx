@@ -93,13 +93,11 @@ export default function BoardCanvas({
 
   if (clearSelectionRef) {
     clearSelectionRef.current = () => {
-      console.log("🧹 clearSelectionRef called");
       const interaction = interactionRef.current;
       interaction.selected = new Set();
       if (interaction.selectionGraphics)
         interaction.selectionGraphics.visible = false;
       drawSelectionRef.current(new Set());
-      console.log("📣 calling onSelectionChange([])");
       onSelectionChange?.([]);
     };
   }

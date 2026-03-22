@@ -12,7 +12,7 @@ from .db_operations import (
     load_user_undo_stack,
 )
 
-logger = logging.getLogger("board.consumer")
+logger = logging.getLogger("board")
 
 _undo_stacks: dict = {}
 _active_users: dict = {}
@@ -49,6 +49,8 @@ class BoardConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
+        logger.info(f"CONNECT user={self.user} board={self.board_id}")
+        # logger.debug(f"ACTIVE USERS: {len(_active_users[self.board_id])}")
         if self.user and self.user.is_authenticated:
             stacks = get_user_stacks(self.board_id, self.user.id)
             if not stacks["undo"]:
@@ -81,6 +83,8 @@ class BoardConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
+        logger.info(f"DISCONNECT user={self.user} board={self.board_id}")
+
         if self.user and self.user.is_authenticated:
             _active_users.get(self.board_id, {}).pop(self.channel_name, None)
 
@@ -109,7 +113,10 @@ class BoardConsumer(AsyncWebsocketConsumer):
         user = self.scope.get("user")
         msg_type = data["type"]
 
+        # logger.debug(f"RECEIVE type={data.get('type')} user={user}")
+
         if msg_type == "cursor_move":
+            # logger.info(f"ACTION {msg_type} user={user.id if user else None}")
             await self.channel_layer.group_send(
                 self.group_name,
                 {
@@ -175,6 +182,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
     # ── handlers ─────────────────────────────────────────────────────
 
     async def _handle_undo(self, user):
+        logger.info(f"UNDO user={user.id} board={self.board_id}")
         if not user or not user.is_authenticated:
             return
         stacks = get_user_stacks(self.board_id, user.id)
@@ -201,6 +209,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
         await self._send_to_sender_and_others(msg)
 
     async def _handle_redo(self, user):
+        logger.info(f"REDO user={user.id} board={self.board_id}")
         if not user or not user.is_authenticated:
             return
         stacks = get_user_stacks(self.board_id, user.id)
@@ -362,11 +371,15 @@ class BoardConsumer(AsyncWebsocketConsumer):
         result = await do_kick()
         if not result:
             return
+        
+
 
         # Mark as kicked BEFORE broadcasting so disconnect skips user_left
         if self.board_id not in _kicked_users:
             _kicked_users[self.board_id] = set()
         _kicked_users[self.board_id].add(result["user_id"])
+
+        logger.warning(f"USER KICKED id={result['user_id']} board={self.board_id}")
 
         await self._send_to_sender_and_others({
             "type": "user_kicked",

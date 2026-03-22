@@ -165,9 +165,8 @@ export function applyDiff(objects: BoardObject[], diff: BoardDiff): BoardObject[
 export function replayToActivity(
   activities: BoardActivity[],
   targetId: string,
-  initialState: BoardObject[] = [],
 ): BoardObject[] {
-  let state: BoardObject[] = [...initialState];
+  let state: BoardObject[] = [];
   for (const activity of activities) {
     if (activity.diff) {
       state = applyDiff(state, activity.diff as BoardDiff);

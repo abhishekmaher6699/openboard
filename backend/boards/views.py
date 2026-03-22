@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
 from board_objects.models import BoardObject
+from activity.models import BoardActivity
 
 from .models import Board
 from .serializers import BoardSerializer, JoinBoardSerializer
@@ -29,33 +30,54 @@ class BoardViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
+
     def perform_create(self, serializer):
         board = serializer.save(owner=self.request.user)
 
-        BoardObject.objects.create(
+        rect = BoardObject.objects.create(
             board=board,
             created_by=self.request.user,
             type="rectangle",
-            x=-400,
-            y=-300,
-            width=800,
-            height=600,
+            x=-400, y=-300,
+            width=800, height=600,
             z_index=0,
             data={"fill": "0xd1d5db", "text": ""},
         )
 
-        BoardObject.objects.create(
+        sticky = BoardObject.objects.create(
             board=board,
             created_by=self.request.user,
             type="sticky",
-            x=-100,
-            y=-100,
-            width=200,
-            height=200,
+            x=-100, y=-100,
+            width=200, height=200,
             z_index=1000,
             data={"fill": "0xffd700", "text": "Welcome!"},
         )
 
+        # save create activities so replay works correctly
+        def obj_data(obj):
+            return {
+                "id": str(obj.id), "type": obj.type,
+                "x": obj.x, "y": obj.y,
+                "width": obj.width, "height": obj.height,
+                "rotation": 0, "z_index": obj.z_index,
+                "locked": False, "data": obj.data,
+            }
+
+        BoardActivity.objects.create(
+            board=board, user=self.request.user,
+            action_type="create_shape",
+            payload={}, sequence=1,
+            diff={"type": "create", "object": obj_data(rect)},
+        )
+
+        BoardActivity.objects.create(
+            board=board, user=self.request.user,
+            action_type="create_shape",
+            payload={}, sequence=2,
+            diff={"type": "create", "object": obj_data(sticky)},
+        )
+        
     @action(detail=False, methods=["post"])
     def join(self, request):
         serializer = JoinBoardSerializer(data=request.data)

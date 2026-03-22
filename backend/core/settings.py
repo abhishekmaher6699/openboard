@@ -80,13 +80,6 @@ TEMPLATES = [
 ASGI_APPLICATION = "core.asgi.application"
 
 ALLOWED_HOSTS = ["*"]
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://192.168.1.71:5173",
-
-]
-
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
@@ -99,22 +92,28 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+import os
+
+DB_HOST = os.getenv("DB_HOST", "localhost")
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "board",
         "USER": "board",
         "PASSWORD": "board",
-        "HOST": "127.0.0.1",
+        "HOST": DB_HOST,
         "PORT": "5432",
     }
 }
+
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(REDIS_HOST, 6379)],
             "capacity": 1500,
             "expiry": 2,
         },
@@ -141,7 +140,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "accounts.authentication.SafeJWTAuthentication",
     ),
 }
 
@@ -176,14 +175,17 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": "logs/board.log",
+        "console": {
+            "class": "logging.StreamHandler",
         },
     },
     "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
         "board": {
-            "handlers": ["file"],
+            "handlers": ["console"],
             "level": "DEBUG",
             "propagate": False,
         },

@@ -1,5 +1,5 @@
 import { apiRequest } from "./client";
-import type { Board } from "../types/board";
+import type { Board } from "../types/dashboard";
 
 export function getBoards() {
     return apiRequest<[]>('/boards/')

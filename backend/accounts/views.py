@@ -6,6 +6,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
+from rest_framework_simplejwt.views import TokenRefreshView
+from .serializers import SafeTokenRefreshSerializer
+
 
 from .serializers import RegisterSerializer
 
@@ -31,7 +34,6 @@ class RegisterView(CreateAPIView):
         }, status = status.HTTP_200_OK)
 
 
-
 class LoginView(TokenObtainPairView):
     pass
 
@@ -54,6 +56,11 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if not request.user or request.user.is_anonymous:
+            return Response(
+                {"error": "Authentication required"},
+                status=401
+            )
 
         user = request.user
         return Response({
@@ -61,7 +68,6 @@ class MeView(APIView):
             "username": user.username,
             "email": user.email
         })
-
 
 class UpdateUserView(APIView):
     permission_classes = [IsAuthenticated]
@@ -94,3 +100,7 @@ class UpdateUserView(APIView):
             "username": user.username,
             "email": user.email
         })
+    
+
+class SafeTokenRefreshView(TokenRefreshView):
+    serializer_class = SafeTokenRefreshSerializer

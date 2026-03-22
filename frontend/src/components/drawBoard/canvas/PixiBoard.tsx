@@ -210,7 +210,6 @@ export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: str
   }, [isPreviewMode]);
 
   useEffect(() => {
-    console.log("📡 selectedIds changed:", selectedIds);
     const ws = socket.socketRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ type: "selection_update", selected_ids: selectedIds }));

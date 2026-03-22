@@ -51,7 +51,7 @@ const RegisterPage = () => {
       navigate("/dashboard");
       toast.success("Account created successfully!");
     } catch (err: any) {
-      setError(err.detail || "Something went wrong");
+      setError(err?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }

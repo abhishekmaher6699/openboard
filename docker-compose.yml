@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: board
+      POSTGRES_USER: board
+      POSTGRES_PASSWORD: board
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  backend:
+
+    build: ./backend
+    container_name: django_backend
+    environment:
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+    
+    # command: daphne -b 0.0.0.0 -p 8000 core.asgi:application
+    entrypoint: ["/entrypoint.sh"]
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000" 
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build: ./frontend
+    container_name: react_frontend
+    ports:
+      - "3000:80"   
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

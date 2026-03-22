@@ -2,6 +2,12 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import RegexValidator
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -45,3 +51,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+    
+
+class SafeTokenRefreshSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        try:
+            return super().validate(attrs)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User not found")
+        except Exception:
+            raise serializers.ValidationError("Invalid or expired refresh token")

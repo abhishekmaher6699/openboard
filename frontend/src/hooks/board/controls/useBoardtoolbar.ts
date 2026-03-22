@@ -123,7 +123,6 @@ export function useBoardToolbar({
   };
 
   const handleDelete = () => {
-    console.log("🗑️ handleDelete called, selectedIds:", selectedIds);
     if (selectedIds.length === 1) deleteObject(selectedIds[0]);
     else if (selectedIds.length > 1) deleteManyObjects(selectedIds);
     clearSelectionRef.current?.();
@@ -228,7 +227,6 @@ export function useBoardToolbar({
       ids.map((id) => {
         const existing =
           objectsRef.current.find((o) => o.id === id)?.data ?? {};
-        console.log("saving data:", { ...existing, ...style });
         return updateObject(boardId, id, { data: { ...existing, ...style } });
       }),
     );

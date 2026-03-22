@@ -54,7 +54,6 @@ export function useBoardActivity(
 
       const next = [...filtered, activity].slice(-ACTIVITY_LIMIT);
 
-      console.log(activity.action_type);
       if (
         Number(activity.user?.id) === currentUserId &&
         activity.action_type !== "restore"

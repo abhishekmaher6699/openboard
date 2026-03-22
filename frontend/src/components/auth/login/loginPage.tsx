@@ -39,7 +39,7 @@ const LoginPage = () => {
       navigate(destination, { replace: true });
       toast.success("Logged in successfully!");
     } catch (err: any) {
-      setError(err.detail || "Something went wrong");
+      setError(err?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }

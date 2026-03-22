@@ -2,8 +2,8 @@ import { useState } from "react";
 import type { PresenceUser } from "../../../hooks/board/presence/UsePresence";
 import {
   getInitials,
-  getUserColor,
 } from "../../../hooks/board/presence/UsePresence";
+import { getUserColor } from "@/lib/activityUtils";
 import ConfirmDialogButton  from "../../ui/ConfirmDialogButton";
 
 interface ActiveUsersProps {
@@ -34,7 +34,7 @@ export default function ActiveUsers({
       >
         <div className="flex items-center">
           {visible.map((user, i) => {
-            const color = getUserColor(user.user_id);
+            const color = getUserColor(user.username);
             const initials = getInitials(user.username);
             const isYou = user.user_id === currentUserId;
             return (
@@ -94,7 +94,7 @@ export default function ActiveUsers({
       {expanded && (
         <div className="bg-white/95 dark:bg-neutral-800/95 backdrop-blur-sm border border-slate-200 dark:border-neutral-700 rounded-xl shadow-lg p-2 flex flex-col gap-1 w-48">
           {users.map((user) => {
-            const color = getUserColor(user.user_id);
+            const color = getUserColor(user.username);
             const initials = getInitials(user.username);
             const isYou = user.user_id === currentUserId;
             return (

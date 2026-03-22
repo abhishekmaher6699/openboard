@@ -47,16 +47,45 @@ export function usePresence({
 }: UsePresenceProps) {
   const [users, setUsers] = useState<PresenceUser[]>([]);
   const navigate = useNavigate();
-  const recentlyLeft = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
-  const kickUser = useCallback(
-    (userId: number) => {
+  const recentlyLeft = useRef<Map<number, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+
+  // ====== SEND HELPERS ======
+
+  const send = useCallback(
+    (payload: object) => {
       const ws = socketRef.current;
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      ws.send(JSON.stringify({ type: "kick_user", user_id: userId }));
+      ws.send(JSON.stringify(payload));
     },
     [socketRef],
   );
+
+  // ====== CURSOR THROTTLING ======
+
+  const lastCursorSent = useRef(0);
+  const lastCursorPos = useRef<{ x: number; y: number } | null>(null);
+
+  // ====== SELECTION THROTTLING ======
+
+  let timeout: any;
+
+  function sendSelection(ids: string[]) {
+    clearTimeout(timeout);
+
+    timeout = setTimeout(() => {
+      send({
+        type: "selection_update",
+        selected_ids: ids,
+      });
+    }, 200);
+  }
+
+  const selectionRef = useRef(sendSelection);
+
+  // ====== SOCKET MESSAGE HANDLING ======
 
   useEffect(() => {
     const unregister = onMessage((data) => {
@@ -79,12 +108,11 @@ export function usePresence({
 
         if (data.user.user_id !== currentUserId) {
           if (recentlyLeft.current.has(data.user.user_id)) {
-            // They refreshed — cancel the pending "left" toast, show nothing
             clearTimeout(recentlyLeft.current.get(data.user.user_id));
             recentlyLeft.current.delete(data.user.user_id);
           } else {
             toast(`${data.user.username} joined the board`, {
-              icon: "👋",
+              icon: "",
               duration: 3000,
             });
           }
@@ -96,10 +124,9 @@ export function usePresence({
         setUsers((prev) => prev.filter((u) => u.user_id !== data.user_id));
 
         if (data.user_id !== currentUserId && data.username) {
-          // Hold the toast for 2s in case they immediately rejoin (refresh)
           const timer = setTimeout(() => {
             toast(`${data.username} left the board`, {
-              icon: "🚪",
+              icon: "",
               duration: 3000,
             });
             recentlyLeft.current.delete(data.user_id);
@@ -112,6 +139,7 @@ export function usePresence({
 
       if (data.type === "user_kicked") {
         setUsers((prev) => prev.filter((u) => u.user_id !== data.user_id));
+
         if (data.user_id === currentUserId) {
           toast.error("You have been removed from this board", {
             duration: 5000,
@@ -119,7 +147,7 @@ export function usePresence({
           navigate("/dashboard");
         } else {
           toast(`${data.username} was removed from the board`, {
-            icon: "🚫",
+            icon: "x",
             duration: 3000,
           });
         }
@@ -154,36 +182,63 @@ export function usePresence({
     return unregister;
   }, [onMessage, currentUserId, navigate]);
 
-  // Clean up any pending timers on unmount
-  useEffect(() => {
-    return () => {
-      recentlyLeft.current.forEach((timer) => clearTimeout(timer));
-    };
-  }, []);
+  // ====== CURSOR SENDING ======
 
   useEffect(() => {
-    let lastSent = 0;
-
     const handleMouseMove = (e: MouseEvent) => {
       const now = Date.now();
-      if (now - lastSent < 150) return;
-      lastSent = now;
+      if (now - lastCursorSent.current < 100) return;
 
       const ws = socketRef.current;
       const viewport = viewportRef.current;
       if (!ws || ws.readyState !== WebSocket.OPEN || !viewport) return;
 
       const worldPos = viewport.toWorld(e.clientX, e.clientY);
-      ws.send(
-        JSON.stringify({ type: "cursor_move", x: worldPos.x, y: worldPos.y }),
-      );
+
+      // movement threshold (huge optimization)
+      if (lastCursorPos.current) {
+        const dx = Math.abs(worldPos.x - lastCursorPos.current.x);
+        const dy = Math.abs(worldPos.y - lastCursorPos.current.y);
+        if (dx < 2 && dy < 2) return;
+      }
+
+      lastCursorSent.current = now;
+      lastCursorPos.current = worldPos;
+
+      send({
+        type: "cursor_move",
+        x: worldPos.x,
+        y: worldPos.y,
+      });
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [socketRef, viewportRef]);
+  }, [socketRef, viewportRef, send]);
+
+  // ====== CLEANUP ======
+
+  useEffect(() => {
+    return () => {
+      recentlyLeft.current.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
+
+  const kickUser = useCallback(
+    (userId: number) => {
+      send({ type: "kick_user", user_id: userId });
+    },
+    [send],
+  );
 
   const otherUsers = users.filter((u) => u.user_id !== currentUserId);
 
-  return { users, otherUsers, kickUser };
+  return {
+    users,
+    otherUsers,
+    kickUser,
+
+    // 👇 expose this to your selection logic
+    sendSelection,
+  };
 }

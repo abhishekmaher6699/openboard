@@ -32,6 +32,14 @@ export type BoardActivity = {
   sequence: number
 }
 
+export type ChatMessage = {
+  id: string;
+  userId: number;
+  username: string;
+  text: string;
+  reactions: Record<string, number[]>; 
+};
+
 export type UseBoardSocketProps = {
   boardId: string;
   objectsRef: React.RefObject<BoardObject[]>;

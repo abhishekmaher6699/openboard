@@ -1,5 +1,5 @@
-// const API_URL = "http://10.131.90.170:8000/api";
-const API_URL = "http://192.168.1.71:8000/api";
+const API_URL = `http://${window.location.hostname}:8000/api`;
+
 
 export async function apiRequest<T>(
   endpoint: string,
@@ -19,9 +19,14 @@ export async function apiRequest<T>(
     headers,
   });
 
-  //   on token expire
+
   if (auth && response.status === 401) {
     const refresh = localStorage.getItem("refresh");
+
+    if (!refresh) {
+      clearAuth();
+      throw new Error("Session expired");
+    }
 
     const refreshResponse = await fetch(`${API_URL}/auth/token/refresh/`, {
       method: "POST",
@@ -32,13 +37,13 @@ export async function apiRequest<T>(
     });
 
     if (!refreshResponse.ok) {
-      throw { detail: "Session expired" }
+      clearAuth();
+      throw new Error("Session expired");
     }
 
     const data = await refreshResponse.json();
 
     localStorage.setItem("access", data.access);
-
     token = data.access;
 
     response = await fetch(`${API_URL}${endpoint}`, {
@@ -48,8 +53,14 @@ export async function apiRequest<T>(
         Authorization: `Bearer ${token}`,
       },
     });
+
+    if (response.status === 401) {
+      clearAuth();
+      throw new Error("Session expired");
+    }
   }
 
+ 
   if (!response.ok) {
     let data: any = {};
 
@@ -70,8 +81,9 @@ export async function apiRequest<T>(
       }
     }
 
-    throw { detail: message };
+    throw new Error(message);
   }
+
 
   if (response.status === 204) {
     return null as T;
@@ -79,6 +91,7 @@ export async function apiRequest<T>(
 
   return response.json();
 }
+
 
 
 function isTokenExpired(token: string): boolean {
@@ -90,28 +103,19 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
-export async function getValidToken(): Promise<string | null> {
-  let token = localStorage.getItem("access");
+export function getValidToken(): string | null {
+  const token = localStorage.getItem("access");
   if (!token) return null;
 
   if (isTokenExpired(token)) {
-    const refresh = localStorage.getItem("refresh");
-    if (!refresh) return null;
-
-    try {
-      const res = await fetch(`${API_URL}/auth/token/refresh/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      localStorage.setItem("access", data.access);
-      token = data.access;
-    } catch {
-      return null;
-    }
+    return null;
   }
 
   return token;
+}
+
+
+function clearAuth() {
+  localStorage.removeItem("access");
+  localStorage.removeItem("refresh");
 }

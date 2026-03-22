@@ -206,7 +206,7 @@ export default function useBoardSocket({
     }
 
     const socket = new WebSocket(
-      `ws://192.168.1.71:8000/ws/board/${boardId}/?token=${token}`
+      `ws://${window.location.hostname}:8000/ws/board/${boardId}/?token=${token}`
     );
 
     socketRef.current = socket;
@@ -251,7 +251,7 @@ export default function useBoardSocket({
   useEffect(() => {
     console.log("useBoardSocket mounted, boardId:", boardId);
     if (initializedRef.current) {
-       console.log("⚠️ already initialized, skipping");
+       console.log("already initialized, skipping");
        return
     };
     initializedRef.current = true;
@@ -260,7 +260,6 @@ export default function useBoardSocket({
     connect();
 
     return () => {
-        console.log("🔴 useBoardSocket cleanup fired");
       unmountedRef.current = true;
 
       if (reconnectTimeoutRef.current) {
