@@ -1,6 +1,13 @@
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/auth-context";
 import { toast } from "sonner";
+import {
+  bauhausFont,
+  cardClass,
+  sectionTitleClass,
+  secondaryActionClass,
+} from "../dashboardTheme";
+import { X } from "lucide-react";
 
 const routes = [
   { name: "Your Boards", path: "/dashboard" },
@@ -20,69 +27,64 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: any) {
 
   return (
     <aside
-      className={`
-      fixed lg:static
-      top-0 left-0
-      h-screen w-64
-      bg-gray-100 dark:bg-neutral-900
-      border-r border-gray-200 dark:border-white
-      flex flex-col
-      z-50
-      transform transition-transform duration-300
-      ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-      lg:translate-x-0
-      `}
+      className={`fixed left-0 top-0 z-50 flex h-screen w-60 max-w-[82vw] flex-col border-r-2 border-[#0a0a0a] bg-[#f5f0e8] transition-transform duration-300 dark:border-[#f5f0e8] dark:bg-[#1e1e1e] ${
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      } lg:sticky lg:translate-x-0`}
     >
-      {/* Header */}
-      <div className="px-6 py-6 border-b border-gray-200 dark:border-white flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div
+        className="h-2 w-full"
+        style={{
+          background:
+            "repeating-linear-gradient(90deg,#d62828 0,#d62828 56px,#f7b731 56px,#f7b731 112px,#1a3a6b 112px,#1a3a6b 168px,#0a0a0a 168px,#0a0a0a 224px)",
+        }}
+      />
+
+      <div className="flex items-center justify-between border-b-2 border-[#0a0a0a] px-4 py-4 dark:border-[#f5f0e8]">
+        <h1
+          className="text-[1.3rem] font-black uppercase tracking-[0.12em] text-[#0a0a0a] dark:text-[#f5f0e8]"
+          style={bauhausFont}
+        >
           OpenBoard
         </h1>
 
-        {/* Close button mobile */}
         <button
-          className="lg:hidden p-2 rounded hover:bg-gray-100 dark:hover:bg-neutral-800 transition"
+          className="flex h-8 w-8 items-center justify-center border-2 border-[#0a0a0a] text-[#0a0a0a] shadow-[2px_2px_0px_#d62828] transition-all duration-75 hover:bg-[#d62828] hover:text-[#f5f0e8] dark:border-[#f5f0e8] dark:text-[#f5f0e8] dark:shadow-[2px_2px_0px_#f7b731] dark:hover:bg-[#f7b731] dark:hover:text-[#0a0a0a] lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-label="Close menu"
         >
-          ✕
+          <X size={16} />
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        <p className="px-2 text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">
+      <nav className="flex-1 px-3 py-4">
+        <p className={`mb-3 px-1.5 ${sectionTitleClass}`} style={bauhausFont}>
           Workspace
         </p>
 
         {routes.map((route) => (
-          <Link
+          <NavLink
             key={route.path}
             to={route.path}
-            className="
-            block px-3 py-2 rounded-lg text-sm font-medium
-            text-gray-700 dark:text-gray-300
-            hover:bg-gray-200 dark:hover:bg-neutral-800
-            hover:text-gray-900 dark:hover:text-white
-            transition-colors duration-200
-            "
+            className={({ isActive }) =>
+              `mb-2 block ${cardClass} px-3 py-2.5 text-[0.82rem] font-black uppercase tracking-widest transition-all duration-75 ${
+                isActive
+                  ? "border-[#0a0a0a] bg-[#0a0a0a] text-black shadow-[3px_3px_0px_#d62828] dark:border-[#f5f0e8] dark:bg-[#f5f0e8] dark:text-[#0a0a0a] dark:shadow-[3px_3px_0px_#f7b731]"
+                  : "text-[#0a0a0a] hover:bg-[#0a0a0a] hover:text-[#f5f0e8] dark:text-[#f5f0e8] dark:hover:bg-[#f5f0e8] dark:hover:text-[#0a0a0a]"
+              }`
+            }
             onClick={() => setSidebarOpen(false)}
+            style={bauhausFont}
           >
             {route.name}
-          </Link>
+          </NavLink>
         ))}
       </nav>
 
-      {/* Logout */}
-      <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="border-t-2 border-[#0a0a0a] px-3 py-4 dark:border-[#f5f0e8]">
         <button
           onClick={handleLogout}
-          className="
-          w-full flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium
-          text-gray-600 dark:text-gray-300
-          hover:text-red-600
-          hover:bg-red-50 dark:hover:bg-red-900/20
-          transition-colors duration-200
-          "
+          className={`w-full ${secondaryActionClass}`}
+          style={bauhausFont}
         >
           Log out
         </button>

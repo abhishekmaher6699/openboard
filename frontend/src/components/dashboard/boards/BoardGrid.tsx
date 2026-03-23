@@ -7,8 +7,11 @@ import Boardcard from "./BoardCard";
 import BoardControls from "./BoardControls";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-
-
+import {
+  bauhausFont,
+  cardClass,
+  sectionTitleClass,
+} from "../dashboardTheme";
 
 export default function BoardGrid() {
   const [boards, setBoards] = useState<Board[]>([]);
@@ -41,7 +44,7 @@ export default function BoardGrid() {
       await deleteBoard(publicId);
       setBoards((prev) => prev.filter((b) => b.public_id !== publicId));
       toast.success("Board deleted successfully!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete board.");
     }
   };
@@ -51,29 +54,46 @@ export default function BoardGrid() {
       await leaveBoard(publicId);
       setBoards((prev) => prev.filter((b) => b.public_id !== publicId));
       toast.success("Left board successfully!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to leave board.");
     }
   };
 
   const handleOpenBoard = (publicId: string) => {
     navigate(`/board/${publicId}`);
-  }
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-        Loading boards...
+      <div
+        className={`mx-auto flex min-h-[13rem] max-w-3xl items-center justify-center px-5 text-center ${cardClass}`}
+      >
+        <p
+          className="text-[0.95rem] font-black uppercase tracking-[0.12em]"
+          style={bauhausFont}
+        >
+          Loading boards...
+        </p>
       </div>
     );
   }
 
   if (!boards.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 text-center">
-        <h2 className="text-lg font-semibold mb-2">No boards yet</h2>
+      <div
+        className={`mx-auto flex max-w-2xl flex-col items-center justify-center px-5 py-16 text-center ${cardClass}`}
+      >
+        <p className={sectionTitleClass} style={bauhausFont}>
+          Workspace
+        </p>
+        <h2
+          className="mt-2 text-[1.8rem] font-black uppercase leading-none tracking-[0.12em] sm:text-[2.1rem]"
+          style={bauhausFont}
+        >
+          No Boards Yet
+        </h2>
 
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="mb-6 mt-3 max-w-md text-[0.9rem] text-[#4f4a42] dark:text-[#c8c0b0]">
           Create your first board to start collaborating.
         </p>
 
@@ -83,18 +103,30 @@ export default function BoardGrid() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
-    <div className=" flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div className="mx-auto max-w-7xl px-1 py-2 sm:px-2 lg:px-4">
+      <div
+        className={`mb-5 flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-end sm:justify-between ${cardClass}`}
+      >
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Your Boards</h2>
+          <p className={sectionTitleClass} style={bauhausFont}>
+            Dashboard
+          </p>
+          <h2
+            className="mt-1.5 text-[1.6rem] font-black uppercase leading-none tracking-[0.1em] sm:text-[1.9rem]"
+            style={bauhausFont}
+          >
+            Your Boards
+          </h2>
 
-          <p className="text-sm text-muted-foreground mt-1">{user?.username}</p>
+          <p className="mt-2 text-[0.86rem] text-[#4f4a42] dark:text-[#c8c0b0]">
+            {user?.username}
+          </p>
         </div>
 
         <BoardControls onBoardAdded={handleBoardAdded} />
       </div>
 
-     <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5 sm:gap-6 lg:gap-7">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3 sm:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] sm:gap-4 lg:gap-5">
         {boards.map((board, index) => (
           <Boardcard
             key={board.public_id}

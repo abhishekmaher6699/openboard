@@ -2,6 +2,8 @@ import Sidebar from "./sidebar/Sidebar";
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import ThemeToggle from "../ui/ThemeToggle";
+import { bauhausFont, shellClass, surfaceClass } from "./dashboardTheme";
+import { Menu } from "lucide-react";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,61 +13,55 @@ export default function Dashboard() {
   }, [sidebarOpen]);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:text-gray-100 flex">
-      <div className="fixed top-3 right-3 z-10001 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-2 shadow-lg">
+    <div
+      className={`relative min-h-screen overflow-x-hidden ${shellClass}`}
+      style={{
+        backgroundImage:
+          "linear-gradient(rgba(10,10,10,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(10,10,10,0.04) 1px,transparent 1px)",
+        backgroundSize: "36px 36px",
+      }}
+    >
+      <div className="pointer-events-none absolute -top-20 right-[-5rem] hidden h-[14rem] w-[14rem] rounded-full border-[14px] border-[#1a3a6b] opacity-10 lg:block dark:border-[#f7b731]" />
+      <div className="pointer-events-none absolute bottom-8 left-0 hidden h-2 w-28 bg-[#d62828] lg:block" />
+
+      <div className={`fixed bottom-3 right-3 z-[10001] p-1.5 ${surfaceClass}`}>
         <ThemeToggle />
       </div>
 
-      {/* Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/45 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <div className="relative flex min-h-screen overflow-x-hidden">
+        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="flex-1 flex flex-col">
-        {/* Mobile Topbar */}
-        <header
-          className="
-          lg:hidden
-          flex items-center justify-between
-          px-4 py-2
-          bg-gray-200 dark:bg-neutral-950
-          border-b border-black dark:border-gray-700
-        "
-        >
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="
-              p-2 rounded-lg
-              hover:bg-gray-100
-              dark:hover:bg-gray-700
-              transition
-            "
-          >
-            ☰
-          </button>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="mx-3 mt-3 flex items-center justify-between border-2 border-[#0a0a0a] bg-[#f5f0e8] px-2.5 py-1.5 shadow-[3px_3px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[3px_3px_0px_#f7b731] lg:hidden">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex h-8 w-8 items-center justify-center border-2 border-[#0a0a0a] text-[#0a0a0a] shadow-[2px_2px_0px_#1a3a6b] transition-all duration-75 hover:bg-[#1a3a6b] hover:text-[#f5f0e8] dark:border-[#f5f0e8] dark:text-[#f5f0e8] dark:shadow-[2px_2px_0px_#f7b731] dark:hover:bg-[#f7b731] dark:hover:text-[#0a0a0a]"
+              aria-label="Open menu"
+            >
+              <Menu size={16} />
+            </button>
 
-          <h1 className="font-semibold text-gray-900 dark:text-gray-100">
-            OpenBoard
-          </h1>
+            <h1
+              className="text-[0.95rem] font-black uppercase tracking-[0.12em]"
+              style={bauhausFont}
+            >
+              OpenBoard
+            </h1>
 
-          <div />
-        </header>
+            <div className="w-8" />
+          </header>
 
-        <main
-          className="
-          flex-1
-          transition-all duration-200
-          p-4 sm:p-6 lg:p-8
-          bg-gray-200 dark:bg-neutral-900
-        "
-        >
-          <Outlet />
-        </main>
+          <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
 import type { BoardCardProps } from "../../../types/dashboard";
 import BoardMenu from "./BoardMenu";
+import { bauhausFont, cardClass } from "../dashboardTheme";
 
-const colors = [
-  "bg-blue-500",
-  "bg-purple-500",
-  "bg-indigo-500",
-  "bg-emerald-500",
-  "bg-amber-500",
+const accentStyles = [
+  { stripe: "#1a3a6b", stamp: "#d62828" },
+  { stripe: "#d62828", stamp: "#f7b731" },
+  { stripe: "#f7b731", stamp: "#1a3a6b" },
+  { stripe: "#0a0a0a", stamp: "#d62828" },
+  { stripe: "#1a3a6b", stamp: "#f7b731" },
 ];
 
 export default function Boardcard({
@@ -17,32 +18,20 @@ export default function Boardcard({
   onLeave,
   onOpen,
 }: BoardCardProps) {
-  const color = colors[index! % colors.length];
+  const accent = accentStyles[index! % accentStyles.length];
 
   return (
     <div
-      className="
-        group
-        bg-white dark:bg-neutral-800
-        border border-gray-200 dark:border-white border-t-0
-        rounded-xl overflow-hidden w-full
-        transition-all duration-200 ease-out
-        hover:-translate-y-0.5
-        hover:shadow-md cursor-pointer
-      "
+      className={`group w-full cursor-pointer overflow-hidden ${cardClass} transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#0a0a0a] dark:hover:shadow-[5px_5px_0px_#f7b731]`}
       onClick={() => onOpen(board.public_id)}
     >
-      {/* Color Accent */}
-      <div className={`h-1.5 w-full ${color}`} />
+      <div className="h-2 w-full" style={{ backgroundColor: accent.stripe }} />
 
-      <div className="p-4 sm:p-5 lg:p-6 flex flex-col justify-between min-h-37.5">
-        {/* Header */}
-        <div className="flex justify-between items-start gap-4">
+      <div className="flex min-h-32 flex-col justify-between p-3.5 sm:p-4">
+        <div className="flex items-start justify-between gap-3">
           <h3
-            className="
-            text-base sm:text-lg font-semibold truncate
-            text-gray-900 dark:text-gray-100
-          "
+            className="truncate pr-2 text-[1rem] font-black uppercase tracking-[0.06em] text-[#0a0a0a] dark:text-[#f5f0e8] sm:text-[1.1rem]"
+            style={bauhausFont}
           >
             {board.name}
           </h3>
@@ -60,37 +49,33 @@ export default function Boardcard({
           </div>
         </div>
 
-        {/* Meta */}
-        <div
-          className="
-          mt-4 sm:mt-6 space-y-2 text-sm
-          text-gray-600 dark:text-gray-400
-        "
-        >
+        <div className="mt-4 space-y-2.5 text-sm">
           <p>
-            Owner{" "}
-            <span className="font-medium text-gray-800 dark:text-gray-200">
+            <span
+              className="mr-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#4f4a42] dark:text-[#c8c0b0]"
+              style={bauhausFont}
+            >
+              Owner
+            </span>
+            <span className="font-bold text-[#0a0a0a] dark:text-[#f5f0e8]">
               {board.owner.username}
             </span>
           </p>
 
-          <div
-            className="
-            flex items-center justify-between
-            text-xs text-gray-500 dark:text-gray-400
-          "
-          >
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#4f4a42] dark:text-[#c8c0b0]">
             <span
-              className="
-              font-mono px-2 py-1 rounded
-              bg-gray-100 dark:bg-gray-700
-              text-gray-700 dark:text-gray-300
-            "
+              className="border-2 border-[#0a0a0a] px-2 py-1 font-mono text-[0.72rem] text-[#0a0a0a] dark:border-[#f5f0e8] dark:text-[#f5f0e8]"
+              style={{ boxShadow: `2px 2px 0px ${accent.stamp}` }}
             >
               {board.invite_code}
             </span>
 
-            <span>{board.member_count} members</span>
+            <span
+              className="border-2 border-[#0a0a0a] px-2 py-1 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#0a0a0a] dark:border-[#f5f0e8] dark:text-[#f5f0e8]"
+              style={bauhausFont}
+            >
+              {board.member_count} Members
+            </span>
           </div>
         </div>
       </div>

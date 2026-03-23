@@ -42,7 +42,7 @@ const RegisterPage = () => {
 
   return (
     <AuthCard title="Register">
-      <div className="fixed top-3 right-3 z-[10001] bg-[#f5f0e8] dark:bg-[#1e1e1e] border-2 border-[#0a0a0a] dark:border-[#f5f0e8] p-2 shadow-[3px_3px_0px_#0a0a0a] dark:shadow-[3px_3px_0px_#f7b731]">
+      <div className="fixed top-3 right-3 z-10001 bg-[#f5f0e8] dark:bg-[#1e1e1e] border-2 border-[#0a0a0a] dark:border-[#f5f0e8] p-2 shadow-[3px_3px_0px_#0a0a0a] dark:shadow-[3px_3px_0px_#f7b731]">
         <ThemeToggle />
       </div>
 
@@ -68,15 +68,15 @@ const RegisterPage = () => {
         {error && <p className="text-[0.78rem] font-bold tracking-widest uppercase text-[#d62828] text-center">{error}</p>}
 
         <button type="submit" disabled={loading}
-          className="w-full py-3 bg-[#0a0a0a] text-[#f5f0e8] border-2 border-[#0a0a0a] font-black tracking-[0.12em] uppercase text-[0.93rem] shadow-[4px_4px_0px_#d62828] hover:bg-[#d62828] hover:border-[#d62828] hover:shadow-[4px_4px_0px_#0a0a0a] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#0a0a0a] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-75 rounded-none dark:bg-[#f5f0e8] dark:text-[#0a0a0a] dark:border-[#f5f0e8] dark:shadow-[4px_4px_0px_#f7b731] dark:hover:bg-[#f7b731] dark:hover:border-[#f7b731]"
+          className="w-full py-3 bg-[#0a0a0a] text-[#f5f0e8] border-2 border-[#0a0a0a] font-black tracking-[0.12em] uppercase text-[0.93rem] shadow-[4px_4px_0px_#d62828] hover:bg-[#d62828] hover:border-[#d62828] hover:shadow-[4px_4px_0px_#0a0a0a] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#0a0a0a] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-75 rounded-none dark:bg-[#f5f0e8] dark:text-[#0a0a0a] dark:border-[#f5f0e8] dark:shadow-[4px_4px_0px_#f7b731] dark:hover:bg-[#f7b731] dark:hover:border-[#f7b731]"
           style={{ fontFamily: "'Barlow Condensed','Arial Narrow',sans-serif" }}>
           {loading ? "Creating account..." : "Register"}
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-[2px] bg-[#0a0a0a] dark:bg-[#f5f0e8]" />
+          <div className="flex-1 h-0.5 bg-[#0a0a0a] dark:bg-[#f5f0e8]" />
           <div className="w-2 h-2 bg-[#d62828] rotate-45" />
-          <div className="flex-1 h-[2px] bg-[#0a0a0a] dark:bg-[#f5f0e8]" />
+          <div className="flex-1 h-0.5 bg-[#0a0a0a] dark:bg-[#f5f0e8]" />
         </div>
 
         <p className="text-center text-[0.8rem] text-[#555] dark:text-[#c8c0b0] tracking-wide">

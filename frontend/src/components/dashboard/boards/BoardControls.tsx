@@ -14,17 +14,19 @@ import {
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { toast } from "sonner";
-
-
-
+import {
+  actionClass,
+  bauhausFont,
+  inputClass,
+  secondaryActionClass,
+} from "../dashboardTheme";
 
 export default function BoardControls({ onBoardAdded }: ControlProps) {
-
   const [newBoardName, setNewBoardName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
-  
+
   const handleCreateBoard = async () => {
     if (!newBoardName.trim()) return;
     try {
@@ -55,99 +57,117 @@ export default function BoardControls({ onBoardAdded }: ControlProps) {
   };
 
   return (
-   <div className="flex gap-3">
+    <div className="flex flex-wrap gap-2.5">
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogTrigger asChild>
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className={actionClass}
+            style={bauhausFont}
+          >
+            Create Board
+          </Button>
+        </DialogTrigger>
 
-  <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-    <DialogTrigger asChild>
-      <Button onClick={() => setCreateOpen(true)}>
-        Create Board
-      </Button>
-    </DialogTrigger>
-
-    <DialogContent
-      className="
-      bg-white dark:bg-neutral-800
-      border border-blue-200 dark:border-gray-700
-      "
-    >
-      <DialogHeader>
-        <DialogTitle className="text-gray-900 dark:text-gray-100">
-          Create Board
-        </DialogTitle>
-      </DialogHeader>
-
-      <div className="space-y-4">
-        <div>
-          <Label className="mb-2 text-gray-700 dark:text-gray-300">
-            Board Name
-          </Label>
-
-          <Input
-            value={newBoardName}
-            onChange={(e) => setNewBoardName(e.target.value)}
-            placeholder="Project Roadmap"
-            className="
-              bg-white dark:bg-neutral-700
-              border-gray-200 dark:border-gray-600
-              text-gray-900 dark:text-gray-100
-              placeholder:text-gray-400
-            "
+        <DialogContent className="border-2 border-[#0a0a0a] bg-[#f5f0e8] p-0 shadow-[4px_4px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[4px_4px_0px_#f7b731]">
+          <div
+            className="h-2 w-full"
+            style={{
+              background:
+                "repeating-linear-gradient(90deg,#d62828 0,#d62828 60px,#f7b731 60px,#f7b731 120px,#1a3a6b 120px,#1a3a6b 180px,#0a0a0a 180px,#0a0a0a 240px)",
+            }}
           />
-        </div>
+          <div className="px-4 pb-4 pt-4 sm:px-5">
+            <DialogHeader className="border-b-2 border-[#1a3a6b] pb-3">
+              <DialogTitle
+                className="text-[1.2rem] font-black uppercase tracking-[0.1em] text-[#0a0a0a] dark:text-[#f5f0e8]"
+                style={bauhausFont}
+              >
+                Create Board
+              </DialogTitle>
+            </DialogHeader>
 
-        <Button onClick={handleCreateBoard} className="w-full">
-          Create
-        </Button>
-      </div>
-    </DialogContent>
-  </Dialog>
+            <div className="space-y-3 pt-4">
+              <div>
+                <Label
+                  className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] dark:text-[#f5f0e8]"
+                  style={bauhausFont}
+                >
+                  Board Name
+                </Label>
 
+                <Input
+                  value={newBoardName}
+                  onChange={(e) => setNewBoardName(e.target.value)}
+                  placeholder="Project Roadmap"
+                  className={inputClass}
+                />
+              </div>
 
-  <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
-    <DialogTrigger asChild>
-      <Button variant="secondary" onClick={() => setJoinOpen(true)}>
-        Join Board
-      </Button>
-    </DialogTrigger>
+              <Button
+                onClick={handleCreateBoard}
+                className={`w-full ${actionClass}`}
+                style={bauhausFont}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-    <DialogContent
-      className="
-      bg-white dark:bg-neutral-800
-      border border-purple-800 dark:border-gray-700
-      "
-    >
-      <DialogHeader>
-        <DialogTitle className="text-gray-900 dark:text-gray-100">
-          Join Board
-        </DialogTitle>
-      </DialogHeader>
+      <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant="secondary"
+            onClick={() => setJoinOpen(true)}
+            className={secondaryActionClass}
+            style={bauhausFont}
+          >
+            Join Board
+          </Button>
+        </DialogTrigger>
 
-      <div className="space-y-4">
-        <div>
-          <Label className="mb-2 text-gray-700 dark:text-gray-300">
-            Invite Code
-          </Label>
+        <DialogContent className="border-2 border-[#0a0a0a] bg-[#f5f0e8] p-0 shadow-[4px_4px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[4px_4px_0px_#f7b731]">
+          <div className="h-2 w-full bg-[#1a3a6b] dark:bg-[#f7b731]" />
+          <div className="px-4 pb-4 pt-4 sm:px-5">
+            <DialogHeader className="border-b-2 border-[#d62828] pb-3">
+              <DialogTitle
+                className="text-[1.2rem] font-black uppercase tracking-[0.1em] text-[#0a0a0a] dark:text-[#f5f0e8]"
+                style={bauhausFont}
+              >
+                Join Board
+              </DialogTitle>
+            </DialogHeader>
 
-          <Input
-            value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value)}
-            placeholder="Enter invite code"
-            className="
-              bg-white dark:bg-neutral-700
-              border-gray-200 dark:border-gray-600
-              text-gray-900 dark:text-gray-100
-              placeholder:text-gray-400
-            "
-          />
-        </div>
+            <div className="space-y-3 pt-4">
+              <div>
+                <Label
+                  className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] dark:text-[#f5f0e8]"
+                  style={bauhausFont}
+                >
+                  Invite Code
+                </Label>
 
-        <Button onClick={handleJoinBoard} className="w-full">
-          Join
-        </Button>
-      </div>
-    </DialogContent>
-  </Dialog>
+                <Input
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  placeholder="Enter invite code"
+                  className={inputClass}
+                />
+              </div>
 
-</div>
+              <Button
+                onClick={handleJoinBoard}
+                className={`w-full ${secondaryActionClass}`}
+                style={bauhausFont}
+              >
+                Join
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
