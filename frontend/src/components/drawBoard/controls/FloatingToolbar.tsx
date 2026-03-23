@@ -118,7 +118,7 @@ export default function FloatingToolbar({
 
   const positionStyle = isMobile
     ? {
-        bottom: 110,
+        bottom: 148,
         left: "50%",
         transform: "translateX(-50%)",
         maxWidth: "calc(100vw - 16px)",

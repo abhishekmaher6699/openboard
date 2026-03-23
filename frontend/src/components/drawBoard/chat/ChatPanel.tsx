@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { X, Send } from "lucide-react";
 import type { ChatMessage } from "../../../hooks/board/chat/useChat";
 import { getUserColor } from "../../../lib/activityUtils";
+import { boardCard } from "../boardChromeTheme";
 
-const EMOJIS = ["👍", "❤️", "😂", "😮", "👏"];
+const EMOJIS = ["👍", "❤", "😂", "😮", "👏"];
 
 interface Props {
   isOpen: boolean;
@@ -46,31 +47,29 @@ export default function ChatPanel({
 
   return (
     <div
-      className={`fixed bottom-20 right-6 z-[9999] w-80 flex flex-col bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl shadow-2xl transition-all duration-300 origin-bottom-right ${
+      className={`fixed bottom-20 right-4 z-[9999] flex w-80 max-w-[calc(100vw-1rem)] origin-bottom-right flex-col transition-all duration-300 ${boardCard} ${
         isOpen
-          ? "opacity-100 scale-100 pointer-events-auto"
-          : "opacity-0 scale-95 pointer-events-none"
+          ? "pointer-events-auto scale-100 opacity-100"
+          : "pointer-events-none scale-95 opacity-0"
       }`}
       style={{ maxHeight: "60vh" }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b dark:border-neutral-700 shrink-0">
-        <span className="font-semibold text-sm text-slate-700 dark:text-gray-200">
+      <div className="flex shrink-0 items-center justify-between border-b-2 border-[#0a0a0a]/15 px-4 py-3 dark:border-[#f5f0e8]/15">
+        <span className="text-sm font-semibold text-slate-700 dark:text-gray-200">
           Chat
         </span>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-gray-300 transition-colors"
+          className="text-slate-400 transition-colors hover:bg-[#0a0a0a] hover:text-[#f5f0e8] dark:hover:bg-[#f5f0e8] dark:hover:text-[#0a0a0a]"
         >
           <X size={16} />
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-4 min-h-0">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-3">
         {messages.length === 0 && (
-          <p className="text-xs text-slate-400 dark:text-gray-500 text-center mt-4">
-            No messages yet. Say hi! 👋
+          <p className="mt-4 text-center text-xs text-slate-400 dark:text-gray-500">
+            No messages yet. Say hi.
           </p>
         )}
 
@@ -86,35 +85,33 @@ export default function ChatPanel({
               onMouseLeave={() => setHoveredMsg(null)}
             >
               {!isMe && (
-                <span className="text-[11px] font-medium px-1" style={{ color }}>
+                <span className="px-1 text-[11px] font-medium" style={{ color }}>
                   {msg.username}
                 </span>
               )}
 
               <div className="relative flex items-end gap-1">
-                {/* Bubble */}
                 <div
-                  className={`max-w-[220px] px-3 py-2 rounded-2xl text-sm leading-snug break-words ${
+                  className={`max-w-[220px] break-words px-3 py-2 text-sm leading-snug ${
                     isMe
-                      ? "bg-blue-500 text-white rounded-br-sm"
-                      : "bg-slate-100 dark:bg-neutral-700 text-slate-800 dark:text-gray-100 rounded-bl-sm"
+                      ? "bg-[#1a3a6b] text-white dark:bg-[#f7b731] dark:text-[#0a0a0a]"
+                      : "bg-slate-100 text-slate-800 dark:bg-neutral-700 dark:text-gray-100"
                   }`}
                 >
                   {msg.text}
                 </div>
 
-                {/* Emoji picker on hover */}
                 {hoveredMsg === msg.id && (
                   <div
                     className={`absolute ${
                       isMe ? "right-full mr-2" : "left-full ml-2"
-                    } bottom-0 flex gap-1 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-1 shadow-lg z-10`}
+                    } bottom-0 z-10 flex gap-1 border-2 border-[#0a0a0a] bg-white px-2 py-1 dark:border-[#f5f0e8] dark:bg-neutral-800`}
                   >
                     {EMOJIS.map((emoji) => (
                       <button
                         key={emoji}
                         onClick={() => onReaction(msg.id, emoji)}
-                        className="text-sm hover:scale-125 transition-transform"
+                        className="text-sm transition-transform hover:scale-125"
                       >
                         {emoji}
                       </button>
@@ -123,7 +120,6 @@ export default function ChatPanel({
                 )}
               </div>
 
-              {/* Reactions */}
               {Object.entries(msg.reactions).some(([, ids]) => ids.length > 0) && (
                 <div className="flex flex-wrap gap-1 px-1">
                   {Object.entries(msg.reactions).map(([emoji, userIds]) =>
@@ -131,15 +127,15 @@ export default function ChatPanel({
                       <button
                         key={emoji}
                         onClick={() => onReaction(msg.id, emoji)}
-                        className={`flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border transition-colors ${
+                        className={`flex items-center gap-0.5 border px-1.5 py-0.5 text-xs transition-colors ${
                           userIds.includes(currentUserId ?? -1)
-                            ? "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700"
-                            : "bg-slate-100 dark:bg-neutral-700 border-slate-200 dark:border-neutral-600"
+                            ? "border-[#1a3a6b] bg-[#1a3a6b]/10 dark:border-[#f7b731] dark:bg-[#f7b731]/10"
+                            : "border-slate-200 bg-slate-100 dark:border-neutral-600 dark:bg-neutral-700"
                         }`}
                       >
                         {emoji} {userIds.length}
                       </button>
-                    ) : null
+                    ) : null,
                   )}
                 </div>
               )}
@@ -150,21 +146,20 @@ export default function ChatPanel({
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="px-3 py-3 border-t dark:border-neutral-700 flex items-end gap-2 shrink-0">
+      <div className="flex shrink-0 items-end gap-2 border-t-2 border-[#0a0a0a]/15 px-3 py-3 dark:border-[#f5f0e8]/15">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message…"
+          placeholder="Message..."
           rows={1}
-          className="flex-1 resize-none bg-slate-100 dark:bg-neutral-700 text-sm text-slate-800 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+          className="flex-1 resize-none border-2 border-[#0a0a0a] bg-white px-3 py-2 text-sm text-slate-800 outline-none transition-shadow placeholder:text-slate-400 focus:border-[#1a3a6b] dark:border-[#f5f0e8] dark:bg-neutral-700 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-[#f7b731]"
           style={{ maxHeight: 80 }}
         />
         <button
           onClick={handleSend}
           disabled={!input.trim()}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 text-white disabled:opacity-40 hover:bg-blue-600 transition-colors shrink-0"
+          className="flex h-8 w-8 shrink-0 items-center justify-center border-2 border-[#0a0a0a] bg-[#0a0a0a] text-white transition-colors hover:bg-[#d62828] disabled:opacity-40 dark:border-[#f5f0e8] dark:bg-[#f5f0e8] dark:text-[#0a0a0a] dark:hover:bg-[#f7b731]"
         >
           <Send size={14} />
         </button>

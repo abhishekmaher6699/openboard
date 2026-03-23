@@ -1,10 +1,9 @@
 import { useState } from "react";
 import type { PresenceUser } from "../../../hooks/board/presence/UsePresence";
-import {
-  getInitials,
-} from "../../../hooks/board/presence/UsePresence";
+import { getInitials } from "../../../hooks/board/presence/UsePresence";
 import { getUserColor } from "@/lib/activityUtils";
-import ConfirmDialogButton  from "../../ui/ConfirmDialogButton";
+import ConfirmDialogButton from "../../ui/ConfirmDialogButton";
+import { boardCard, boardShell } from "../boardChromeTheme";
 
 interface ActiveUsersProps {
   users: PresenceUser[];
@@ -22,15 +21,15 @@ export default function ActiveUsers({
   const [expanded, setExpanded] = useState(false);
   if (users.length === 0) return null;
 
-  const MAX_VISIBLE = 4;
-  const visible = expanded ? users : users.slice(0, MAX_VISIBLE);
-  const overflow = users.length - MAX_VISIBLE;
+  const maxVisible = 4;
+  const visible = expanded ? users : users.slice(0, maxVisible);
+  const overflow = users.length - maxVisible;
 
   return (
-    <div className="fixed top-4 left-4 z-10000 flex flex-col gap-2">
+    <div className="fixed top-4 left-4 z-[10000] flex max-w-[calc(100vw-1rem)] flex-col gap-2">
       <div
         onClick={() => setExpanded((o) => !o)}
-        className="flex items-center gap-2 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm border border-slate-200 dark:border-neutral-700 rounded-full px-3 py-1.5 shadow-md w-fit cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-700/90 transition-colors"
+        className={`flex w-fit max-w-full cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 transition-colors hover:bg-[#f5f0e8] dark:hover:bg-[#1e1e1e] ${boardShell}`}
       >
         <div className="flex items-center">
           {visible.map((user, i) => {
@@ -40,21 +39,20 @@ export default function ActiveUsers({
             return (
               <div
                 key={user.user_id}
-                className="relative group"
+                className="group relative"
                 style={{
                   marginLeft: i === 0 ? 0 : -8,
                   zIndex: visible.length - i,
                 }}
               >
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold ring-2 ring-white dark:ring-neutral-800 shadow-sm cursor-default select-none"
+                  className="flex h-7 w-7 cursor-default select-none items-center justify-center rounded-full text-[11px] font-bold text-white ring-2 ring-white shadow-sm dark:ring-neutral-800"
                   style={{ background: color }}
                 >
                   {initials}
                 </div>
-                <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-neutral-700 text-white text-[11px] rounded-md px-2 py-0.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg z-50">
+                <div className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap bg-gray-900 px-2 py-0.5 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-neutral-700">
                   {isYou ? `${user.username} (you)` : user.username}
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 dark:bg-neutral-700 rotate-45" />
                 </div>
               </div>
             );
@@ -66,7 +64,7 @@ export default function ActiveUsers({
                 e.stopPropagation();
                 setExpanded(true);
               }}
-              className="w-7 h-7 rounded-full flex items-center justify-center bg-slate-100 dark:bg-neutral-700 text-slate-600 dark:text-gray-300 text-[11px] font-semibold ring-2 ring-white dark:ring-neutral-800 shadow-sm hover:bg-slate-200 dark:hover:bg-neutral-600 transition-colors"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600 ring-2 ring-white shadow-sm transition-colors hover:bg-slate-200 dark:bg-neutral-700 dark:text-gray-300 dark:ring-neutral-800 dark:hover:bg-neutral-600"
               style={{ marginLeft: -8, zIndex: 0 }}
             >
               +{overflow}
@@ -74,7 +72,7 @@ export default function ActiveUsers({
           )}
         </div>
 
-        <span className="text-xs text-slate-500 dark:text-gray-400 font-medium leading-none">
+        <span className="text-xs font-medium leading-none text-slate-500 dark:text-gray-400">
           {users.length === 1 ? "1 online" : `${users.length} online`}
         </span>
 
@@ -84,15 +82,15 @@ export default function ActiveUsers({
               e.stopPropagation();
               setExpanded(false);
             }}
-            className="text-[11px] text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 transition-colors ml-1"
+            className="ml-1 text-[11px] text-slate-400 transition-colors hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"
           >
-            ▲
+            ^
           </button>
         )}
       </div>
 
       {expanded && (
-        <div className="bg-white/95 dark:bg-neutral-800/95 backdrop-blur-sm border border-slate-200 dark:border-neutral-700 rounded-xl shadow-lg p-2 flex flex-col gap-1 w-48">
+        <div className={`flex w-48 max-w-[calc(100vw-2rem)] flex-col gap-1 p-2 ${boardCard}`}>
           {users.map((user) => {
             const color = getUserColor(user.username);
             const initials = getInitials(user.username);
@@ -100,26 +98,26 @@ export default function ActiveUsers({
             return (
               <div
                 key={user.user_id}
-                className="flex items-center gap-2 px-1 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-neutral-700"
+                className="flex items-center gap-2 px-1 py-1 transition-colors hover:bg-[#0a0a0a]/4 dark:hover:bg-neutral-700"
               >
                 <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
                   style={{ background: color }}
                 >
                   {initials}
                 </div>
 
-                <span className="text-xs text-slate-700 dark:text-gray-200 truncate flex-1">
+                <span className="flex-1 truncate text-xs text-slate-700 dark:text-gray-200">
                   {user.username}
                   {isYou && (
-                    <span className="text-slate-400 dark:text-gray-500 ml-1">
+                    <span className="ml-1 text-slate-400 dark:text-gray-500">
                       (you)
                     </span>
                   )}
                 </span>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   {isOwner && !isYou && onKick && (
                     <div onClick={(e) => e.stopPropagation()}>
                       <ConfirmDialogButton
@@ -129,9 +127,9 @@ export default function ActiveUsers({
                         trigger={
                           <button
                             title={`Kick ${user.username}`}
-                            className="text-[10px] w-4 h-4 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                            className="flex h-4 w-4 items-center justify-center text-[10px] text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                           >
-                            ✕
+                            X
                           </button>
                         }
                         onConfirm={() => onKick(user.user_id)}

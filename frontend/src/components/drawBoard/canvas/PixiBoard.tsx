@@ -25,6 +25,7 @@ import { MessageCircle } from "lucide-react";
 
 import { useTheme } from "../../../context/theme-context";
 import ThemeToggle from "../../ui/ThemeToggle";
+import { boardShell } from "../boardChromeTheme";
 
 export default memo(function PixiBoard({
   boardId,
@@ -319,21 +320,21 @@ export default memo(function PixiBoard({
         objects={objects}
       />
 
-      <div className="fixed top-16 left-4 z-9999 bg-white dark:bg-neutral-800 border dark:border-neutral-700 rounded-full px-2 py-2 shadow-lg">
+      <div className="fixed top-16 left-4 z-[9999] rounded-full border-2 border-[#0a0a0a] bg-[#f5f0e8]/96 px-2 py-2 shadow-[3px_3px_0px_#0a0a0a] backdrop-blur-sm dark:border-[#f5f0e8] dark:bg-[#1e1e1e]/96 dark:shadow-[3px_3px_0px_#f7b731]">
         <ThemeToggle />
       </div>
 
-      <div className="fixed bottom-15 right-6 z-[9999]">
+      <div className="fixed bottom-15 right-5 z-[9999]">
         <button
           onClick={() => setChatOpen((o) => !o)}
-          className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-neutral-800 border dark:border-neutral-700 shadow-lg hover:bg-slate-50 dark:hover:bg-neutral-700 transition-colors"
+          className={`relative flex h-10 w-10 items-center justify-center ${boardShell} transition-colors hover:bg-[#f5f0e8] dark:hover:bg-[#1e1e1e]`}
         >
           <MessageCircle
-            size={18}
-            className="text-slate-600 dark:text-gray-300"
+            size={17}
+            className="text-[#0a0a0a] dark:text-[#f5f0e8]"
           />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center bg-[#d62828] px-1 text-[9px] font-bold text-white">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
