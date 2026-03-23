@@ -5,6 +5,7 @@ import { simplifyPoints, flattenPoints, getBounds } from "../../../lib/penUtils"
 type Props = {
   viewportRef: React.RefObject<any>;
   itemsLayerRef: React.RefObject<any>;
+  overlayLayerRef: React.RefObject<any>
   interactionRef: React.RefObject<any>;
   tool: string;
   color: string;
@@ -21,6 +22,7 @@ function getDefaultPenColor() {
 export function usePen({
   viewportRef,
   itemsLayerRef,
+  overlayLayerRef,
   tool,
   color,
   strokeWidth,
@@ -41,6 +43,7 @@ export function usePen({
 
     const viewport = viewportRef.current;
     const itemsLayer = itemsLayerRef.current;
+    const overlayLayer = overlayLayerRef.current
     if (!viewport || !itemsLayer) return;
 
     let drawing = false;
@@ -59,7 +62,7 @@ export function usePen({
       rawPoints.push([pos.x, pos.y]);
 
       previewGraphics = new Graphics();
-      itemsLayer.addChild(previewGraphics);
+      overlayLayer.addChild(previewGraphics);
     };
 
     const onMove = (e: any) => {
@@ -103,7 +106,7 @@ export function usePen({
       viewport.plugins.resume("drag");
 
       if (previewGraphics) {
-        itemsLayer.removeChild(previewGraphics);
+        overlayLayer.removeChild(previewGraphics);
         previewGraphics.destroy();
         previewGraphics = null;
       }

@@ -7,6 +7,8 @@ import { drawShapeFromObj } from "../../../lib/shapeUtils"
 const getObjectKey = (obj: BoardObject) =>
   `${obj.x},${obj.y},${obj.width},${obj.height},${JSON.stringify(obj.data)}`
 
+const PASSIVE_TOOLS = new Set(["pen", "rectangle", "circle", "triangle", "diamond", "sticky", "line"])
+
 export function useShapeRenderer({
   objects,
   viewportRef,
@@ -16,6 +18,7 @@ export function useShapeRenderer({
   objectMapRef,
   drawSelectionRef,
   toolRef,
+  tool,
   onTextOpen,
   onTextCreate,
   disabled,
@@ -31,13 +34,21 @@ export function useShapeRenderer({
   }, [objects])
 
   useEffect(() => {
+    const graphicsMap = interaction.graphicsMap
+    const isPassive = PASSIVE_TOOLS.has(tool)
+    graphicsMap.forEach((container) => {
+      container.eventMode = isPassive ? "none" : "static"
+      container.cursor = isPassive ? "crosshair" : "pointer"
+    })
+  }, [tool])
+
+  useEffect(() => {
     const viewport = viewportRef.current
     const itemsLayer = itemsLayerRef.current
     const graphicsMap = interaction.graphicsMap
 
     if (!viewport || !itemsLayer) return
 
-    // remove deleted objects
     const nextIds = new Set(objects.map(o => o.id))
     graphicsMap.forEach((container, id) => {
       if (!nextIds.has(id)) {
@@ -48,13 +59,15 @@ export function useShapeRenderer({
       }
     })
 
+    const isPassive = PASSIVE_TOOLS.has(toolRef.current)
+
     objects.forEach(obj => {
       let container = graphicsMap.get(obj.id)
 
       if (!container) {
         container = new Container()
-        container.eventMode = "static"
-        container.cursor = "pointer"
+        container.eventMode = isPassive ? "none" : "static"
+        container.cursor = isPassive ? "crosshair" : "pointer"
         itemsLayer.addChild(container)
         graphicsMap.set(obj.id, container)
 
@@ -86,9 +99,6 @@ export function useShapeRenderer({
   }, [objects])
 }
 
-
-
-
 function createPointerHandlers(
   obj: BoardObject,
   container: Container,
@@ -98,13 +108,16 @@ function createPointerHandlers(
   drawSelectionRef: React.RefObject<any>,
   toolRef: React.RefObject<any>,
   onTextOpen: (id: string) => void,
-  onTextCreate: (x: number, y: number) => void,  // ← add this
+  onTextCreate: (x: number, y: number) => void,
   disabledRef: React.RefObject<boolean | undefined>,
 ) {
   let lastUpTime = 0
 
   const onPointerUp = (e: any) => {
     if (interaction.isEditing || disabledRef.current) return
+
+    // only handle double-tap in select mode
+    if (toolRef.current !== "select") return
 
     const now = Date.now()
     if (now - lastUpTime < 300) {
@@ -119,28 +132,39 @@ function createPointerHandlers(
       const currentObj = objectMapRef.current.get(obj.id)
       if (!currentObj) return
 
-      // ← FIX: text and sticky both open the editor on THIS object
       if (currentObj.type === "text" || currentObj.type === "sticky") {
         onTextOpen(currentObj.id)
       }
-      // all other types (rectangle, circle, etc.) do nothing on double-tap
       return
-
     }
     lastUpTime = now
   }
 
   const onPointerDown = (e: any) => {
-    e.stopPropagation()
     if (interaction.isEditing || disabledRef.current) return
+
+    const currentTool = toolRef.current
+
+    // text tool on a text/sticky object → open editor, stop propagation
+    if (currentTool === "text") {
+      // e.stopPropagation()
+      const currentObj = objectMapRef.current.get(obj.id)
+      if (currentObj?.type === "sticky" || currentObj?.type === "text") {
+        e.stopPropagation()
+        onTextOpen(obj.id)
+      }
+      return
+    }
+
+    // all non-select tools: do NOT stop propagation, do NOT select
+    // let the event fall through to the viewport (pen draws, etc.)
+    if (currentTool !== "select") return
+
+    // --- select mode only below ---
+    e.stopPropagation()
 
     const currentObj = objectMapRef.current.get(obj.id)
     if (!currentObj) return
-
-    if (toolRef.current === "text") {
-      if (currentObj.type === "sticky" || currentObj.type === "text") onTextOpen(obj.id)
-      return
-    }
 
     const shiftHeld = e.originalEvent?.shiftKey ?? false
     const alreadySelected = interaction.selected.has(obj.id)

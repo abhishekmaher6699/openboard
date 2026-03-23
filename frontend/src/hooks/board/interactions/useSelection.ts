@@ -48,6 +48,7 @@ export function useSelection({
   onSelectionChange,
   onToolbarUpdate,
   disabled,
+  toolRef,
 }: UseSelectionProps) {
   const drawSelection: DrawSelectionFn = (
     ids: Set<string>,
@@ -161,6 +162,9 @@ export function useSelection({
     const interaction = interactionRef.current;
 
     const down = (e: any) => {
+
+      if (toolRef?.current !== "select") return
+      
       if (interaction.isMarqueeActive) return;
       if (interaction.isEditing) return
       if (e.originalEvent?.shiftKey) return;

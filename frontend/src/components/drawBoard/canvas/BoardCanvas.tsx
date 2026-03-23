@@ -87,6 +87,7 @@ export default function BoardCanvas({
     onSelectionChange,
     onToolbarUpdate,
     disabled: previewMode,
+    toolRef
   });
 
   drawSelectionRef.current = drawSelection;
@@ -150,6 +151,7 @@ export default function BoardCanvas({
     objectMapRef,
     drawSelectionRef,
     toolRef,
+    tool,
     onTextOpen: openEditor,       // ← edit existing object
     onTextCreate: handleTextCreate, // ← only called for non-text objects (now unused in renderer)
     disabled: previewMode,
@@ -177,6 +179,7 @@ export default function BoardCanvas({
   usePen({
     viewportRef,
     itemsLayerRef,
+    overlayLayerRef,
     interactionRef,
     tool,
     color,

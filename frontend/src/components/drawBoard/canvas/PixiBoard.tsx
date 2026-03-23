@@ -26,13 +26,17 @@ import { MessageCircle } from "lucide-react";
 import { useTheme } from "../../../context/theme-context";
 import ThemeToggle from "../../ui/ThemeToggle";
 
-export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: string, boardOwnerId: number | null }) {
+export default memo(function PixiBoard({
+  boardId,
+  boardOwnerId,
+}: {
+  boardId: string;
+  boardOwnerId: number | null;
+}) {
   //  console.log("PixiBoard render", boardId);
   const { theme } = useTheme();
   // console.log("useTheme value:", theme);
   const isDark = theme === "dark";
-
-
 
   const [objects, setObjects] = useState<BoardObject[]>([]);
   const [tool, setTool] = useState<Tool>("select");
@@ -60,7 +64,6 @@ export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: str
   const [unreadCount, setUnreadCount] = useState(0);
 
   const isOwner = boardOwnerId !== null && currentUserId === boardOwnerId;
-
 
   const viewportRef = useRef<any>(null);
   const objectMapRef = useRef<Map<string, BoardObject>>(new Map());
@@ -162,7 +165,7 @@ export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: str
     updateColor,
     updateText,
     updateStrokeWidth,
-    updateLine
+    updateLine,
   } = useBoardObjects({ boardId, color, objects, setObjects, ...socket });
 
   const {
@@ -179,7 +182,7 @@ export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: str
     handleFontFamily,
     handleTextColor,
     handleStrokeWidth,
-    handleStrokeWidthPreview
+    handleStrokeWidthPreview,
   } = useBoardToolbar({
     boardId,
     selectedIds,
@@ -193,8 +196,7 @@ export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: str
     sendCreate: socket.sendCreate,
     sendUpdate: socket.sendUpdate,
     sendUpdateMany: socket.sendUpdateMany,
-    updateStrokeWidth
-    
+    updateStrokeWidth,
   });
 
   useUndoRedo({
@@ -210,9 +212,16 @@ export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: str
   }, [isPreviewMode]);
 
   useEffect(() => {
+    clearSelectionRef.current?.();
+    hideToolbar();
+  }, [tool]);
+
+  useEffect(() => {
     const ws = socket.socketRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: "selection_update", selected_ids: selectedIds }));
+    ws.send(
+      JSON.stringify({ type: "selection_update", selected_ids: selectedIds }),
+    );
   }, [selectedIds]);
 
   useEffect(() => {
@@ -249,7 +258,12 @@ export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: str
       )}
 
       {/* Active users top-left */}
-      <ActiveUsers users={users} currentUserId={currentUserId} isOwner={isOwner} onKick={kickUser}/>
+      <ActiveUsers
+        users={users}
+        currentUserId={currentUserId}
+        isOwner={isOwner}
+        onKick={kickUser}
+      />
       <RemoteSelections
         users={otherUsers}
         objects={objects}
@@ -371,4 +385,4 @@ export default memo(function PixiBoard({ boardId, boardOwnerId }: { boardId: str
       </Application>
     </>
   );
-})
+});

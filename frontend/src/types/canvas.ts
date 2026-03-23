@@ -86,6 +86,7 @@ export type UseShapeRendererProps = {
   objectMapRef: React.RefObject<Map<string, BoardObject>>
   drawSelectionRef: React.RefObject<DrawSelectionFn>
   toolRef: React.RefObject<Tool>
+  tool: Tool
   onTextOpen: (id: string) => void
   onTextCreate: (x: number, y: number) => void;
   disabled: boolean | undefined
@@ -102,6 +103,7 @@ export type UseSelectionProps = {
   onToolbarUpdate?: (ids: Set<string>, overrides?: SelectionOverrides) => void
   clearSelectionRef?: React.RefObject<() => void>
   previewMode?: boolean
+  toolRef: React.RefObject<Tool>
   disabled: boolean | undefined
 }
 
