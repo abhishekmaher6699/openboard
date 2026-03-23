@@ -6,7 +6,6 @@ function getTextareaStyles(
   screenPos: { x: number; y: number },
   scale: number,
 ): Partial<CSSStyleDeclaration> {
-
   const isDark = document.documentElement.classList.contains("dark")
   return {
     position: "fixed",
@@ -43,6 +42,7 @@ export function useTextEdit({
 }: UseTextEditProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const editingIdRef = useRef<string | null>(null)
+  const suppressBlurRef = useRef(false)
 
   function openEditor(id: string) {
     if (disabled) return
@@ -50,9 +50,13 @@ export function useTextEdit({
     const viewport = viewportRef.current
     if (!viewport) return
 
+    // already editing this exact object — do nothing
+    if (editingIdRef.current === id) return
+
     const canvas = viewport.renderer?.view as HTMLCanvasElement
     if (canvas) canvas.style.pointerEvents = "none"
 
+    // close any existing editor without committing
     if (textareaRef.current) closeEditor(false)
 
     const obj = objectMapRef.current.get(id)
@@ -82,6 +86,11 @@ export function useTextEdit({
     textareaRef.current = textarea
 
     const commit = () => {
+      // skip if closeEditor() triggered this blur programmatically
+      if (suppressBlurRef.current) {
+        suppressBlurRef.current = false
+        return
+      }
       if (!editingIdRef.current) return
       onTextChange(editingIdRef.current, textarea.value)
       closeEditor(true)
@@ -99,6 +108,9 @@ export function useTextEdit({
 
   function closeEditor(switchToSelect = true) {
     if (disabled) return
+
+    // tell the blur handler not to commit
+    suppressBlurRef.current = true
 
     const viewport = viewportRef.current
     const interaction = interactionRef.current

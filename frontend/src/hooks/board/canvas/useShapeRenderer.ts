@@ -117,16 +117,15 @@ function createPointerHandlers(
       if (interaction.selectionGraphics) interaction.selectionGraphics.visible = false
 
       const currentObj = objectMapRef.current.get(obj.id)
+      if (!currentObj) return
 
-      if (currentObj?.type === "sticky") {
-        // sticky keeps full-shape editor
-        onTextOpen(obj.id)
-      } else {
-        // everything else — create a new text object at click position
-        const worldPos = viewport.toWorld(e.global)
-        onTextCreate(worldPos.x - 100, worldPos.y - 20)
+      // ← FIX: text and sticky both open the editor on THIS object
+      if (currentObj.type === "text" || currentObj.type === "sticky") {
+        onTextOpen(currentObj.id)
       }
+      // all other types (rectangle, circle, etc.) do nothing on double-tap
       return
+
     }
     lastUpTime = now
   }

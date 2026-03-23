@@ -162,6 +162,7 @@ export function useSelection({
 
     const down = (e: any) => {
       if (interaction.isMarqueeActive) return;
+      if (interaction.isEditing) return
       if (e.originalEvent?.shiftKey) return;
 
       if (interaction.selectionGraphics && interaction.selected.size > 0) {

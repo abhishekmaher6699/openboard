@@ -102,7 +102,6 @@ export default function BoardCanvas({
     };
   }
 
-  // disable all interactions in preview mode — pan/zoom still works via viewport
   useDrag({
     viewportRef,
     interactionRef,
@@ -120,10 +119,27 @@ export default function BoardCanvas({
     interactionRef,
     objectMapRef,
     selectedIds,
-    onUpdateLine: onLineUpdate, 
+    onUpdateLine: onLineUpdate,
     disabled: previewMode,
     objects
   });
+
+  // Shared text-create handler: only used for empty-canvas double-tap
+  // and explicit text tool clicks on blank canvas.
+  // Double-tapping an existing text/sticky object is handled
+  // inside useShapeRenderer → onTextOpen, never reaches here.
+  const handleTextCreate = async (x: number, y: number) => {
+    const id = await onCreate("text", x, y);
+    let attempts = 0;
+    const waitForObj = () => {
+      if (objectMapRef.current.has(id!)) {
+        openEditor(id!);
+        return;
+      }
+      if (attempts++ < 20) setTimeout(waitForObj, 50);
+    };
+    waitForObj();
+  };
 
   useShapeRenderer({
     objects,
@@ -134,20 +150,8 @@ export default function BoardCanvas({
     objectMapRef,
     drawSelectionRef,
     toolRef,
-    onTextOpen: openEditor,
-    onTextCreate: async (x, y) => {
-      // ← add
-      const id = await onCreate("text", x, y);
-      let attempts = 0;
-      const waitForObj = () => {
-        if (objectMapRef.current.has(id!)) {
-          openEditor(id!);
-          return;
-        }
-        if (attempts++ < 20) setTimeout(waitForObj, 50);
-      };
-      waitForObj();
-    },
+    onTextOpen: openEditor,       // ← edit existing object
+    onTextCreate: handleTextCreate, // ← only called for non-text objects (now unused in renderer)
     disabled: previewMode,
   });
 
@@ -166,18 +170,7 @@ export default function BoardCanvas({
     onCreate,
     onToolChange: setTool,
     interactionRef,
-    onTextCreate: async (x: number, y: number) => {
-      const id = await onCreate("text", x, y);
-      let attempts = 0;
-      const waitForObj = () => {
-        if (objectMapRef.current.has(id!)) {
-          openEditor(id!);
-          return;
-        }
-        if (attempts++ < 20) setTimeout(waitForObj, 50);
-      };
-      waitForObj();
-    },
+    onTextCreate: handleTextCreate, // ← empty-canvas double-tap or text tool
     disabled: previewMode,
   });
 
