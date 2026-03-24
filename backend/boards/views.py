@@ -2,11 +2,11 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Q
 from board_objects.models import BoardObject
 from activity.models import BoardActivity
 
-from .models import Board
+from .access import accessible_boards_for_user
+from .models import Board, BoardJoinRequest
 from .serializers import BoardSerializer, JoinBoardSerializer
 from .permissions import IsOwner
 
@@ -18,10 +18,7 @@ class BoardViewSet(viewsets.ModelViewSet):
     lookup_field = "public_id"
 
     def get_queryset(self):
-        user = self.request.user
-        return Board.objects.filter(
-            Q(owner=user) | Q(members=user)
-        ).distinct()
+        return accessible_boards_for_user(self.request.user)
 
     def get_permissions(self):
         if self.action == "destroy":
@@ -99,8 +96,24 @@ class BoardViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        board.members.add(request.user)
-        return Response(BoardSerializer(board).data)
+        join_request, created = BoardJoinRequest.objects.get_or_create(
+            board=board,
+            user=request.user,
+        )
+        if not created:
+            return Response(
+                {"detail": "Approval request already pending"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "detail": "Join request sent. The board owner must approve it before you can access the board.",
+                "board_name": board.name,
+                "public_id": board.public_id,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
 
     @action(detail=True, methods=["post"])
     def leave(self, request, *args, **kwargs):
@@ -114,6 +127,73 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         board.members.remove(request.user)
         return Response({"detail": "Left board"})
+
+    @action(detail=True, methods=["get"], url_path="join-requests")
+    def join_requests(self, request, *args, **kwargs):
+        board = self.get_object()
+
+        if request.user != board.owner:
+            return Response(
+                {"detail": "Only the owner can view join requests"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = self.get_serializer(board)
+        return Response(
+            {
+                "pending_request_count": serializer.data["pending_request_count"],
+                "pending_requests": serializer.data["pending_requests"],
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="approve/(?P<user_id>[^/.]+)")
+    def approve(self, request, public_id=None, user_id=None):
+        board = self.get_object()
+
+        if request.user != board.owner:
+            return Response(
+                {"detail": "Only the owner can approve join requests"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        join_request = BoardJoinRequest.objects.filter(
+            board=board,
+            user_id=user_id,
+        ).first()
+        if not join_request:
+            return Response(
+                {"detail": "Join request not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        board.members.add(join_request.user)
+        join_request.delete()
+
+        serializer = self.get_serializer(board)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="reject/(?P<user_id>[^/.]+)")
+    def reject(self, request, public_id=None, user_id=None):
+        board = self.get_object()
+
+        if request.user != board.owner:
+            return Response(
+                {"detail": "Only the owner can reject join requests"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        deleted, _ = BoardJoinRequest.objects.filter(
+            board=board,
+            user_id=user_id,
+        ).delete()
+        if not deleted:
+            return Response(
+                {"detail": "Join request not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = self.get_serializer(board)
+        return Response(serializer.data)
     
     @action(detail=True, methods=["post"], url_path="kick/(?P<user_id>[^/.]+)")
     def kick(self, request, public_id=None, user_id=None):

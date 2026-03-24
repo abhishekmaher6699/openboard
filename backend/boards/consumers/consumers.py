@@ -1,4 +1,5 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
 import json
 import logging
 from .db_operations import (
@@ -46,39 +47,47 @@ class BoardConsumer(AsyncWebsocketConsumer):
         self.board_id = self.scope["url_route"]["kwargs"]["board_id"]
         self.group_name = f"board_{self.board_id}"
         self.user = self.scope.get("user")
+
+        if not self.user or not self.user.is_authenticated:
+            await self.close(code=4401)
+            return
+
+        if not await self._user_can_access_board():
+            await self.close(code=4403)
+            return
+
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
         logger.info(f"CONNECT user={self.user} board={self.board_id}")
         # logger.debug(f"ACTIVE USERS: {len(_active_users[self.board_id])}")
-        if self.user and self.user.is_authenticated:
-            stacks = get_user_stacks(self.board_id, self.user.id)
-            if not stacks["undo"]:
-                stacks["undo"] = await load_user_undo_stack(self.board_id, self.user.id)
+        stacks = get_user_stacks(self.board_id, self.user.id)
+        if not stacks["undo"]:
+            stacks["undo"] = await load_user_undo_stack(self.board_id, self.user.id)
 
-            if self.board_id not in _active_users:
-                _active_users[self.board_id] = {}
-            _active_users[self.board_id][self.channel_name] = {
-                "user_id": self.user.id,
-                "username": self.user.username,
+        if self.board_id not in _active_users:
+            _active_users[self.board_id] = {}
+        _active_users[self.board_id][self.channel_name] = {
+            "user_id": self.user.id,
+            "username": self.user.username,
+        }
+
+        await self.send(text_data=json.dumps({
+            "type": "presence_init",
+            "users": get_active_users(self.board_id),
+        }))
+
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                "type": "board_event_others",
+                "message": {
+                    "type": "user_joined",
+                    "user": {"user_id": self.user.id, "username": self.user.username},
+                },
+                "sender_channel": self.channel_name,
             }
-
-            await self.send(text_data=json.dumps({
-                "type": "presence_init",
-                "users": get_active_users(self.board_id),
-            }))
-
-            await self.channel_layer.group_send(
-                self.group_name,
-                {
-                    "type": "board_event_others",
-                    "message": {
-                        "type": "user_joined",
-                        "user": {"user_id": self.user.id, "username": self.user.username},
-                    },
-                    "sender_channel": self.channel_name,
-                }
-            )
+        )
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
@@ -350,8 +359,6 @@ class BoardConsumer(AsyncWebsocketConsumer):
         if not target_id:
             return
 
-        from channels.db import database_sync_to_async
-
         @database_sync_to_async
         def do_kick():
             from boards.models import Board
@@ -386,6 +393,18 @@ class BoardConsumer(AsyncWebsocketConsumer):
             "user_id": result["user_id"],
             "username": result["username"],
         })
+
+    @database_sync_to_async
+    def _user_can_access_board(self):
+        from boards.access import user_can_access_board
+        from boards.models import Board
+
+        try:
+            board = Board.objects.get(public_id=self.board_id)
+        except Board.DoesNotExist:
+            return False
+
+        return user_can_access_board(self.user, board)
 
     # ── utils ─────────────────────────────────────────────────────────
 

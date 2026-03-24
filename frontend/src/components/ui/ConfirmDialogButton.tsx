@@ -42,7 +42,7 @@ export default function ConfirmDialogButton({
             <AlertDialogDescription className="text-[0.95rem] text-[#4f4a42] dark:text-[#c8c0b0]">
               {description}
             </AlertDialogDescription>
-        </AlertDialogHeader>
+          </AlertDialogHeader>
 
           <AlertDialogFooter className="pt-5">
             <AlertDialogCancel variant="outline" size="default" className={secondaryActionClass} style={bauhausFont}>

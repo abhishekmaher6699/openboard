@@ -39,6 +39,12 @@ export default function BoardGrid() {
     setBoards((prev) => [board, ...prev]);
   };
 
+  const handleBoardUpdated = (board: Board) => {
+    setBoards((prev) =>
+      prev.map((item) => (item.public_id === board.public_id ? board : item)),
+    );
+  };
+
   const handleDelete = async (publicId: string) => {
     try {
       await deleteBoard(publicId);
@@ -136,6 +142,7 @@ export default function BoardGrid() {
             onDelete={handleDelete}
             onLeave={handleLeave}
             onOpen={handleOpenBoard}
+            onBoardUpdated={handleBoardUpdated}
           />
         ))}
       </div>

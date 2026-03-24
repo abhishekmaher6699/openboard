@@ -45,14 +45,17 @@ export default function BoardControls({ onBoardAdded }: ControlProps) {
     if (!inviteCode.trim()) return;
 
     try {
-      const board = await joinBoard(inviteCode);
-      onBoardAdded(board);
+      const response = await joinBoard(inviteCode);
       setInviteCode("");
       setJoinOpen(false);
-      toast.success("Joined board successfully!");
+      toast.success(response.detail);
     } catch (err) {
       console.error("Join board failed", err);
-      toast.error("Failed to join board. Check your invite code.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to request access. Check your invite code.",
+      );
     }
   };
 
@@ -69,7 +72,11 @@ export default function BoardControls({ onBoardAdded }: ControlProps) {
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="border-0 rounded-xl border-[#0a0a0a] bg-[#f5f0e8] p-0 shadow-[4px_4px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[4px_4px_0px]">
+        <DialogContent
+          className="border-0 rounded-xl border-[#0a0a0a] bg-[#f5f0e8] p-0 shadow-[4px_4px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[4px_4px_0px]"
+          onInteractOutside={() => setCreateOpen(false)}
+          onPointerDownOutside={() => setCreateOpen(false)}
+        >
           <div
             className="h-2 w-full rounded-t-xl"
             style={{
@@ -128,7 +135,11 @@ export default function BoardControls({ onBoardAdded }: ControlProps) {
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="border-0 border-[#0a0a0a] bg-[#f5f0e8] p-0 shadow-[4px_4px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[4px_4px_0px_white]">
+        <DialogContent
+          className="border-0 border-[#0a0a0a] bg-[#f5f0e8] p-0 shadow-[4px_4px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[4px_4px_0px_white]"
+          onInteractOutside={() => setJoinOpen(false)}
+          onPointerDownOutside={() => setJoinOpen(false)}
+        >
           <div
             className="h-2 w-full rounded-t-xl"
             style={{
@@ -142,7 +153,7 @@ export default function BoardControls({ onBoardAdded }: ControlProps) {
                 className="text-[1.2rem] font-black uppercase tracking-[0.1em] text-[#0a0a0a] dark:text-[#f5f0e8]"
                 style={bauhausFont}
               >
-                Join Board
+                Request Board Access
               </DialogTitle>
             </DialogHeader>
 
@@ -161,6 +172,10 @@ export default function BoardControls({ onBoardAdded }: ControlProps) {
                   placeholder="Enter invite code"
                   className={inputClass}
                 />
+                <p className="mt-2 text-xs text-[#4f4a42] dark:text-[#c8c0b0]">
+                  The board owner must approve your request before it appears in
+                  your dashboard.
+                </p>
               </div>
 
               <Button

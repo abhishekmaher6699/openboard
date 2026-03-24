@@ -17,8 +17,10 @@ export default function Boardcard({
   index,
   onLeave,
   onOpen,
+  onBoardUpdated,
 }: BoardCardProps) {
   const accent = accentStyles[index! % accentStyles.length];
+  const isOwner = currentUserId !== null && board.owner.id === currentUserId;
 
   return (
     <div
@@ -45,6 +47,7 @@ export default function Boardcard({
               currentUserId={currentUserId}
               onDelete={onDelete}
               onLeave={onLeave}
+              onBoardUpdated={onBoardUpdated}
             />
           </div>
         </div>
@@ -76,6 +79,14 @@ export default function Boardcard({
             >
               {board.member_count} Members
             </span>
+            {isOwner && board.pending_request_count > 0 && (
+              <span
+                className="border-2 border-[#d62828] bg-[#d62828] px-2 py-1 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#f5f0e8]"
+                style={bauhausFont}
+              >
+                {board.pending_request_count} Pending
+              </span>
+            )}
           </div>
         </div>
       </div>
