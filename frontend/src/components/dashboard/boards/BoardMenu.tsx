@@ -35,7 +35,7 @@ export default function BoardMenu({
         <Button
           size="icon"
           variant="ghost"
-          className="border-2 border-[#0a0a0a] bg-transparent text-[#0a0a0a] shadow-[3px_3px_0px_#f7b731] hover:bg-[#f7b731] hover:text-[#0a0a0a] dark:border-[#f5f0e8] dark:text-[#f5f0e8] dark:shadow-[3px_3px_0px_#1a3a6b] dark:hover:bg-[#1a3a6b] dark:hover:text-[#f5f0e8]"
+          className="border-2 border-[#0a0a0a] bg-transparent text-[#0a0a0a] shadow-[3px_3px_0px_#] hover:bg-[#f7b731] hover:text-[#0a0a0a] dark:border-[#f5f0e8] dark:text-[#f5f0e8] dark:shadow-[3px_3px_0px_#] dark:hover:bg-[#1a3a6b] dark:hover:text-[#f5f0e8]"
         >
           <MoreVertical size={16} />
         </Button>

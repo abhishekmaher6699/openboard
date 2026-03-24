@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import ThemeToggle from "../../ui/ThemeToggle"
 
 const LABEL = "text-[0.68rem] font-bold tracking-[0.14em] uppercase text-[#0a0a0a] dark:text-[#f5f0e8]"
-const INPUT = "w-full border-2 border-[#0a0a0a] bg-white dark:bg-[#2a2a2a] dark:border-[#c8c0b0] text-[#0a0a0a] dark:text-[#f5f0e8] px-3.5 py-2.5 text-[0.93rem] rounded-none outline-none placeholder:text-[#999] focus:border-[#1a3a6b] focus:shadow-[4px_4px_0px_#1a3a6b] dark:focus:border-[#f7b731] dark:focus:shadow-[4px_4px_0px_#f7b731] transition-shadow"
+const INPUT = "w-full border-2 border-[#0a0a0a] bg-white dark:bg-[#2a2a2a] dark:border-[#c8c0b0] text-[#0a0a0a] dark:text-[#f5f0e8] px-3.5 py-2.5 text-[0.93rem] rounded-none outline-none placeholder:text-[#999] focus:border-[#1a3a6b] focus:shadow-[4px_4px_0px_#1a3a6b] dark:focus:border-[#ffffff] dark:focus:shadow-[4px_4px_0px_#ffffff] transition-shadow"
 
 const LoginPage = () => {
   const { user, loading: authLoading, setUser } = useAuth()
@@ -43,7 +43,7 @@ const LoginPage = () => {
 
   return (
     <AuthCard title="Login">
-      <div className="fixed top-3 right-3 z-[10001] bg-[#f5f0e8] dark:bg-[#1e1e1e] border-2 border-[#0a0a0a] dark:border-[#f5f0e8] p-2 shadow-[3px_3px_0px_#0a0a0a] dark:shadow-[3px_3px_0px_#f7b731]">
+      <div className="fixed top-3 right-3 z-[10001] bg-[#f5f0e8] dark:bg-[#1e1e1e] border-2 border-[#0a0a0a] dark:border-[#f5f0e8] p-2 shadow-[3px_3px_0px_#0a0a0a] dark:shadow-[3px_3px_0px_#ffffff]">
         <ThemeToggle />
       </div>
 

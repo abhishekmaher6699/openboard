@@ -22,7 +22,7 @@ export default function Boardcard({
 
   return (
     <div
-      className={`group w-full cursor-pointer overflow-hidden ${cardClass} transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#0a0a0a] dark:hover:shadow-[5px_5px_0px_#f7b731]`}
+      className={`group w-full cursor-pointer overflow-hidden ${cardClass} transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#0a0a0a] dark:hover:shadow-[5px_5px_0px_#ffffff]`}
       onClick={() => onOpen(board.public_id)}
     >
       <div className="h-2 w-full" style={{ backgroundColor: accent.stripe }} />
@@ -64,8 +64,8 @@ export default function Boardcard({
 
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#4f4a42] dark:text-[#c8c0b0]">
             <span
-              className="border-2 border-[#0a0a0a] px-2 py-1 font-mono text-[0.72rem] text-[#0a0a0a] dark:border-[#f5f0e8] dark:text-[#f5f0e8]"
-              style={{ boxShadow: `2px 2px 0px ${accent.stamp}` }}
+              className="border-2 border-[#0a0a0a] px-3 py-2 font-mono text-[0.72rem] text-[#0a0a0a] dark:border-[#f3f3f3] dark:text-[#f5f0e8]"
+              style={{ boxShadow: `2px 2px 0px ${accent.stripe}` }}
             >
               {board.invite_code}
             </span>

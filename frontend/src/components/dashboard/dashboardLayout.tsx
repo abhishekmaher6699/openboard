@@ -39,10 +39,10 @@ export default function Dashboard() {
         <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="mx-3 mt-3 flex items-center justify-between border-2 border-[#0a0a0a] bg-[#f5f0e8] px-2.5 py-1.5 shadow-[3px_3px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[3px_3px_0px_#f7b731] lg:hidden">
+          <header className="mx-3 mt-3 flex items-center justify-between border-2 border-[#0a0a0a] bg-[#f5f0e8] px-2.5 py-1.5 shadow-[3px_3px_0px_#0a0a0a] dark:border-[#f5f0e8] dark:bg-[#1e1e1e] dark:shadow-[3px_3px_0px_#ffffff] lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex h-8 w-8 items-center justify-center border-2 border-[#0a0a0a] text-[#0a0a0a] shadow-[2px_2px_0px_#1a3a6b] transition-all duration-75 hover:bg-[#1a3a6b] hover:text-[#f5f0e8] dark:border-[#f5f0e8] dark:text-[#f5f0e8] dark:shadow-[2px_2px_0px_#f7b731] dark:hover:bg-[#f7b731] dark:hover:text-[#0a0a0a]"
+              className="flex h-8 w-8 items-center justify-center border-2 border-[#0a0a0a] text-[#0a0a0a] shadow-[2px_2px_0px_#] transition-all duration-75 hover:bg-[#1a3a6b] hover:text-[#f5f0e8] dark:border-[#f5f0e8] dark:text-[#f5f0e8] dark:shadow-[2px_2px_0px_#] dark:hover:bg-[#f7b731] dark:hover:text-[#0a0a0a]"
               aria-label="Open menu"
             >
               <Menu size={16} />

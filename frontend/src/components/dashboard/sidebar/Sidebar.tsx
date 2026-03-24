@@ -69,7 +69,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: any) {
               `mb-2 block ${cardClass} px-3 py-2.5 text-[0.82rem] font-black uppercase tracking-widest transition-all duration-75 ${
                 isActive
                   ? "border-[#0a0a0a] bg-[#0a0a0a] text-black shadow-[3px_3px_0px_#d62828] dark:border-[#f5f0e8] dark:bg-[#f5f0e8] dark:text-[#0a0a0a] dark:shadow-[3px_3px_0px_#f7b731]"
-                  : "text-[#0a0a0a] hover:bg-[#0a0a0a] hover:text-[#f5f0e8] dark:text-[#f5f0e8] dark:hover:bg-[#f5f0e8] dark:hover:text-[#0a0a0a]"
+                  : "text-[#0a0a0a] hover:bg-[#0a0a0a] hover:text-[#f5f0e8] dark:text-[#f5f0e8] dark:hover:bg-[#c3c3c3] dark:hover:text-[#0a0a0a]"
               }`
             }
             onClick={() => setSidebarOpen(false)}
@@ -83,7 +83,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: any) {
       <div className="border-t-2 border-[#0a0a0a] px-3 py-4 dark:border-[#f5f0e8]">
         <button
           onClick={handleLogout}
-          className={`w-full ${secondaryActionClass}`}
+          className={`w-full ${secondaryActionClass} hover:bg-[#ff0000]`}
           style={bauhausFont}
         >
           Log out
