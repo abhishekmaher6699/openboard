@@ -320,7 +320,7 @@ export default memo(function PixiBoard({
         objects={objects}
       />
 
-      <div className="fixed top-16 left-4 z-[9999] rounded-full border-2 border-[#0a0a0a] bg-[#f5f0e8]/96 px-2 py-2 shadow-[3px_3px_0px_#0a0a0a] backdrop-blur-sm dark:border-[#f5f0e8] dark:bg-[#1e1e1e]/96 dark:shadow-[3px_3px_0px_#f7b731]">
+      <div className="fixed top-16 left-4 z-[9999] rounded-full border-2 border-[#0a0a0a] bg-[#f5f0e8]/96 px-2 py-2 shadow-[3px_3px_0px_#0a0a0a] backdrop-blur-sm dark:border-[#f5f0e8] dark:bg-[#1e1e1e]/96 dark:shadow-[3px_3px_0px_#f5f0e8]">
         <ThemeToggle />
       </div>
 

@@ -42,7 +42,7 @@ export default function ActivityPanel({
 
   return (
     <div
-      className={`fixed top-0 right-0 z-[10000] flex h-screen w-80 max-w-[92vw] flex-col border-l-2 border-[#0a0a0a] ${boardShell} transition-transform duration-200 dark:border-[#f5f0e8] ${
+      className={`fixed top-0 right-0 z-10000 flex h-screen w-80 max-w-[92vw] flex-col border-l-2 border-[#0a0a0a] bg-[#f5f0e8]/96 shadow-[4px_4px_0px_#0a0a0a] backdrop-blur-sm dark:bg-[#1e1e1e]/96 dark:shadow-[4px_4px_0px_#f5f0e8] transition-transform duration-200 dark:border-[#f5f0e8] ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >
