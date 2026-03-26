@@ -4,7 +4,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { AuthProvider } from "./context/auth-context.tsx";
 import { ThemeProvider } from "./context/theme-context.tsx";
-import { Toaster } from "sonner";
+import { Toaster } from "./components/ui/sonner";
 
 createRoot(document.getElementById("root")!).render(
   // <StrictMode>
