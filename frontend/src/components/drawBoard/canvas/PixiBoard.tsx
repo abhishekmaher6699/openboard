@@ -253,6 +253,7 @@ export default memo(function PixiBoard({
       {isPreviewMode && (
         <PreviewBanner
           label={previewLabel}
+          isOwner={isOwner}
           onRestore={() => handleRestore(previewObjects, previewSequence)}
           onExit={exitPreview}
         />
@@ -311,6 +312,7 @@ export default memo(function PixiBoard({
         loading={loading}
         ready={ready}
         isOpen={activityPanelOpen}
+        isOwner={isOwner}
         onClose={() => setActivityPanelOpen(false)}
         onPreview={enterPreview}
         onRestore={(snapshot, sequence) => handleRestore(snapshot, sequence)}

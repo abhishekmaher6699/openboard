@@ -9,11 +9,15 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 from channels.auth import AuthMiddlewareStack
 import boards.routing
+import notifs.routing
 from core.middleware import JWTAuthMiddleware
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": JWTAuthMiddleware(
-        URLRouter(boards.routing.websocket_urlpatterns)
+        URLRouter(
+            boards.routing.websocket_urlpatterns
+            + notifs.routing.websocket_urlpatterns
+        )
     ),
 })

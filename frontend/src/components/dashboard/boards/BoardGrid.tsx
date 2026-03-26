@@ -12,6 +12,7 @@ import {
   cardClass,
   sectionTitleClass,
 } from "../dashboardTheme";
+import useNotificationsSocket from "../../../hooks/websockets/useNotificationsSocket";
 
 export default function BoardGrid() {
   const [boards, setBoards] = useState<Board[]>([]);
@@ -36,7 +37,16 @@ export default function BoardGrid() {
   }, []);
 
   const handleBoardAdded = (board: Board) => {
-    setBoards((prev) => [board, ...prev]);
+    setBoards((prev) => {
+      const existingIndex = prev.findIndex((b) => b.public_id === board.public_id);
+      if (existingIndex === -1) {
+        return [board, ...prev];
+      }
+
+      return prev.map((item) =>
+        item.public_id === board.public_id ? board : item,
+      );
+    });
   };
 
   const handleBoardUpdated = (board: Board) => {
@@ -44,6 +54,13 @@ export default function BoardGrid() {
       prev.map((item) => (item.public_id === board.public_id ? board : item)),
     );
   };
+
+  useNotificationsSocket({
+    enabled: Boolean(user?.id),
+    onBoardsLoaded: setBoards,
+    onBoardUpdated: handleBoardUpdated,
+    onBoardAdded: handleBoardAdded,
+  });
 
   const handleDelete = async (publicId: string) => {
     try {
@@ -92,7 +109,7 @@ export default function BoardGrid() {
         <p className={sectionTitleClass} style={bauhausFont}>
           Workspace
         </p>
-        
+
         <h2
           className="mt-2 text-[1.8rem] font-black uppercase leading-none tracking-[0.12em] sm:text-[2.1rem]"
           style={bauhausFont}

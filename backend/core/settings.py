@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "api",
     "activity",
     "accounts",
+    "notifs",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
 ]

@@ -2,6 +2,9 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from types import SimpleNamespace
 from board_objects.models import BoardObject
 from activity.models import BoardActivity
 
@@ -74,6 +77,29 @@ class BoardViewSet(viewsets.ModelViewSet):
             payload={}, sequence=2,
             diff={"type": "create", "object": obj_data(sticky)},
         )
+
+    def _notify_user(self, user_id: int, payload: dict):
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            return
+
+        async_to_sync(channel_layer.group_send)(
+            f"user_{user_id}",
+            {
+                "type": "notify",
+                "payload": payload,
+            },
+        )
+
+    def _serialize_board_for_user(self, board, user):
+        serializer = self.get_serializer(
+            board,
+            context={
+                "request": SimpleNamespace(user=user),
+                "view": self,
+            },
+        )
+        return serializer.data
         
     @action(detail=False, methods=["post"])
     def join(self, request):
@@ -105,6 +131,22 @@ class BoardViewSet(viewsets.ModelViewSet):
                 {"detail": "Approval request already pending"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        self._notify_user(
+            board.owner_id,
+            {
+                "type": "join_request_created",
+                "board": self._serialize_board_for_user(board, board.owner),
+                "request": {
+                    "id": join_request.id,
+                    "user": {
+                        "id": request.user.id,
+                        "username": request.user.username,
+                    },
+                    "created_at": join_request.created_at.isoformat(),
+                },
+            },
+        )
 
         return Response(
             {
@@ -167,9 +209,29 @@ class BoardViewSet(viewsets.ModelViewSet):
             )
 
         board.members.add(join_request.user)
+        approved_user = join_request.user
         join_request.delete()
 
         serializer = self.get_serializer(board)
+        owner_board_data = self._serialize_board_for_user(board, board.owner)
+        approved_user_board_data = self._serialize_board_for_user(board, approved_user)
+
+        self._notify_user(
+            board.owner_id,
+            {
+                "type": "join_request_approved",
+                "board": owner_board_data,
+                "user_id": approved_user.id,
+            },
+        )
+        self._notify_user(
+            approved_user.id,
+            {
+                "type": "board_access_granted",
+                "board": approved_user_board_data,
+            },
+        )
+
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="reject/(?P<user_id>[^/.]+)")
@@ -182,17 +244,39 @@ class BoardViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        deleted, _ = BoardJoinRequest.objects.filter(
+        join_request = BoardJoinRequest.objects.filter(
             board=board,
             user_id=user_id,
-        ).delete()
-        if not deleted:
+        ).select_related("user").first()
+        if not join_request:
             return Response(
                 {"detail": "Join request not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        rejected_user = join_request.user
+        join_request.delete()
+
         serializer = self.get_serializer(board)
+        owner_board_data = self._serialize_board_for_user(board, board.owner)
+
+        self._notify_user(
+            board.owner_id,
+            {
+                "type": "join_request_rejected",
+                "board": owner_board_data,
+                "user_id": rejected_user.id,
+            },
+        )
+        self._notify_user(
+            rejected_user.id,
+            {
+                "type": "join_request_rejected",
+                "board_public_id": board.public_id,
+                "board_name": board.name,
+            },
+        )
+
         return Response(serializer.data)
     
     @action(detail=True, methods=["post"], url_path="kick/(?P<user_id>[^/.]+)")

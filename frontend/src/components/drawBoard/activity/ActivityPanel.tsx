@@ -15,6 +15,7 @@ export default function ActivityPanel({
   activities = [],
   loading,
   isOpen,
+  isOwner,
   onClose,
   onPreview,
   onRestore,
@@ -128,7 +129,7 @@ export default function ActivityPanel({
                       viewing
                     </span>
                   )}
-                  {first.action_type !== "restore" && (
+                  {isOwner && first.action_type !== "restore" && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -193,7 +194,7 @@ export default function ActivityPanel({
                 >
                   <div className="mb-2 font-medium">Restore board to this state?</div>
                   <div className="mb-2.5 text-xs opacity-80">
-                    This will restore the board for all users.
+                    This will restore the full board for all users.
                   </div>
                   <div className="flex gap-1.5">
                     <button

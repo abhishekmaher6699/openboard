@@ -108,6 +108,7 @@ export type ActivityPanelProps = {
   loading: boolean;
   ready: boolean;
   isOpen: boolean;
+  isOwner: boolean;
   onClose: () => void;
   onPreview: (snapshot: BoardObject[], label: string, sequence: number) => void;
   onRestore: (snapshot: BoardObject[], sequence: number) => void;
@@ -120,6 +121,7 @@ export type ActivityPanelProps = {
 
 export type PreviewBannerProps = {
   label: string
+  isOwner: boolean
   onRestore: () => void
   onExit: () => void
 }

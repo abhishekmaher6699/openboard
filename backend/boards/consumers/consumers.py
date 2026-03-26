@@ -243,6 +243,16 @@ class BoardConsumer(AsyncWebsocketConsumer):
         await self._send_to_sender_and_others(msg)
 
     async def _handle_restore(self, data, user):
+        if not user or not user.is_authenticated:
+            return
+
+        if not await self._user_is_board_owner():
+            await self.send(text_data=json.dumps({
+                "type": "error",
+                "detail": "Only the board owner can restore the board.",
+            }))
+            return
+
         sequence = data.get("sequence", 0)
 
         if self.board_id in _undo_stacks:
@@ -405,6 +415,17 @@ class BoardConsumer(AsyncWebsocketConsumer):
             return False
 
         return user_can_access_board(self.user, board)
+
+    @database_sync_to_async
+    def _user_is_board_owner(self):
+        from boards.models import Board
+
+        try:
+            board = Board.objects.get(public_id=self.board_id)
+        except Board.DoesNotExist:
+            return False
+
+        return board.owner_id == self.user.id
 
     # ── utils ─────────────────────────────────────────────────────────
 
