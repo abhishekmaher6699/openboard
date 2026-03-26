@@ -52,7 +52,6 @@ export function usePresence({
     new Map(),
   );
 
-  // ====== SEND HELPERS ======
 
   const send = useCallback(
     (payload: object) => {
@@ -63,12 +62,10 @@ export function usePresence({
     [socketRef],
   );
 
-  // ====== CURSOR THROTTLING ======
 
   const lastCursorSent = useRef(0);
   const lastCursorPos = useRef<{ x: number; y: number } | null>(null);
 
-  // ====== SELECTION THROTTLING ======
 
   let timeout: any;
 
@@ -85,7 +82,6 @@ export function usePresence({
 
   const selectionRef = useRef(sendSelection);
 
-  // ====== SOCKET MESSAGE HANDLING ======
 
   useEffect(() => {
     const unregister = onMessage((data) => {
@@ -182,7 +178,6 @@ export function usePresence({
     return unregister;
   }, [onMessage, currentUserId, navigate]);
 
-  // ====== CURSOR SENDING ======
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -216,7 +211,6 @@ export function usePresence({
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [socketRef, viewportRef, send]);
 
-  // ====== CLEANUP ======
 
   useEffect(() => {
     return () => {
@@ -237,8 +231,6 @@ export function usePresence({
     users,
     otherUsers,
     kickUser,
-
-    // 👇 expose this to your selection logic
     sendSelection,
   };
 }

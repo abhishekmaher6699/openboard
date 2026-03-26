@@ -8,13 +8,13 @@ while ! nc -z postgres 5432; do
   sleep 1
 done
 
-echo "✅ Postgres is up"
+echo "Postgres is up"
 
-echo "🚀 Running migrations..."
+echo "Running migrations..."
 python manage.py migrate --noinput
 
-echo "📦 Collecting static files..."
+echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-echo "🔥 Starting server..."
+echo "Starting server..."
 exec daphne -b 0.0.0.0 -p 8000 core.asgi:application

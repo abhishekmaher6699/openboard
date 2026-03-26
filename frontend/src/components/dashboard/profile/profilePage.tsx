@@ -42,7 +42,7 @@ export default function ProfilePage() {
       setEditing(false);
       toast.success("Profile updated successfully");
     } catch (err: any) {
-      setError(err.detail || "Something went wrong");
+      setError(err?.message || "Something went wrong");
     } finally {
       setSaving(false);
     }

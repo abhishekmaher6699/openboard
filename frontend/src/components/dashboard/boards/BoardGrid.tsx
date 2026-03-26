@@ -92,6 +92,7 @@ export default function BoardGrid() {
         <p className={sectionTitleClass} style={bauhausFont}>
           Workspace
         </p>
+        
         <h2
           className="mt-2 text-[1.8rem] font-black uppercase leading-none tracking-[0.12em] sm:text-[2.1rem]"
           style={bauhausFont}
