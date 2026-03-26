@@ -115,7 +115,14 @@ export function getValidToken(): string | null {
 }
 
 
+let isRedirecting = false;
+
 function clearAuth() {
   localStorage.removeItem("access");
   localStorage.removeItem("refresh");
+
+  if (!isRedirecting && window.location.pathname !== "/login") {
+    isRedirecting = true;
+    window.location.href = "/login";
+  }
 }

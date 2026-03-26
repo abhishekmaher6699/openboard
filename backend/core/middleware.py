@@ -23,7 +23,6 @@ def get_user_from_token(token_key):
 
 class JWTAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
-        # get token from query string: ws://...?token=xxx
         query_string = scope.get("query_string", b"").decode()
         # print(f"query_string: {query_string}")
 

@@ -17,7 +17,7 @@ logger = logging.getLogger("board")
 
 _undo_stacks: dict = {}
 _active_users: dict = {}
-_kicked_users: dict = {}  # { board_id: set of user_ids }
+_kicked_users: dict = {} 
 
 TRACKED = {
     "create_shape", "delete_shape", "delete_many",
